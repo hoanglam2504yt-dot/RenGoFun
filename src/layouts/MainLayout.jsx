@@ -1,42 +1,63 @@
 import "../styles/layout.css";
+import {
+  Palette,
+  LayoutDashboard,
+  PenLine,
+  Layers,
+  Box,
+  Wand2,
+  Scissors,
+  Contrast,
+  Package,
+  Cpu,
+  Settings,
+  CheckCircle,
+  AlertCircle,
+  Zap,
+} from "lucide-react";
 
 // ── Nav data ─────────────────────────────────────────────────────────────────
 const NAV_SECTIONS = [
   {
     label: "Tổng quan & Editor",
     items: [
-      { id: "dashboard", icon: "⬡", label: "Trang chủ / Tổng quan" },
-      { id: "editor",    icon: "✏️", label: "Trang chủ / Editor chính" },
+      { id: "dashboard", Icon: LayoutDashboard, label: "Trang chủ / Tổng quan" },
+      { id: "editor", Icon: PenLine, label: "Trang chủ / Editor chính" },
     ],
   },
   {
     label: "In ấn & In ấn",
     items: [
-      { id: "queue",   icon: "🗂", label: "Xử lý hàng loạt (Queue)", count: "3" },
-      { id: "mockup",  icon: "🎲", label: "Tạo Mockup 3D" },
-      { id: "smooth",  icon: "🔗", label: "Làm mượt & Kiểm viền DTF" },
-      { id: "matting", icon: "✂️", label: "Tách nền in & AI Matting" },
-      { id: "spot",    icon: "🎨", label: "Tách phim in lụa & Spot" },
-      { id: "alpha",   icon: "◑",  label: "Trắng đen & Kiểm Alpha" },
+      { id: "queue", Icon: Layers, label: "Xử lý hàng loạt (Queue)", count: "3" },
+      { id: "mockup", Icon: Box, label: "Tạo Mockup 3D" },
+      { id: "smooth", Icon: Wand2, label: "Làm mượt & Kiểm viền DTF" },
+      { id: "matting", Icon: Scissors, label: "Tách nền in & AI Matting" },
+      { id: "spot", Icon: Palette, label: "Tách phim in lụa & Spot" },
+      { id: "alpha", Icon: Contrast, label: "Trắng đen & Kiểm Alpha" },
     ],
   },
   {
     label: "Cài hình & Hệ thống",
     items: [
-      { id: "presets", icon: "📦", label: "Khó Presets & Lưu trữ" },
-      { id: "engine",  icon: "⚙️", label: "Cài Engine & GPU" },
-      { id: "settings",icon: "🔧", label: "Cài đặt chung & Tùy chỉnh" },
+      { id: "presets", Icon: Package, label: "Khó Presets & Lưu trữ" },
+      { id: "engine", Icon: Cpu, label: "Cài Engine & GPU" },
+      { id: "settings", Icon: Settings, label: "Cài đặt chung & Tùy chỉnh" },
     ],
   },
 ];
 
 // ── Header chip data ──────────────────────────────────────────────────────────
 const HEADER_CHIPS = [
-  { label: "Python 3.13",  cls: "chip--green", dot: true },
-  { label: "Sidecar",      cls: "chip--blue",  dot: true },
+  { label: "Python 3.13", cls: "chip--green", dot: true },
+  { label: "Sidecar", cls: "chip--blue", dot: true },
   { label: "CUDA 12.1 Ready", cls: "chip--amber", dot: false },
-  { label: "Go 0.9ms",     cls: "chip--blue",  dot: false },
+  { label: "Go 0.9ms", cls: "chip--blue", dot: false },
   { label: "RTX 4070 (Active)", cls: "chip--gpu", dot: true },
+];
+
+// ── Status footer items ───────────────────────────────────────────────────────
+const FOOTER_STATUS = [
+  { cls: "status-dot--green", label: "Tauri IPC Connected", Icon: CheckCircle }
 ];
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -47,7 +68,9 @@ function MainLayout({ currentView, onNavigate, children }) {
       <aside className="sidebar">
         {/* Logo */}
         <div className="sidebar__logo">
-          <div className="sidebar__logo-icon">🎨</div>
+          <div className="sidebar__logo-icon">
+            <Palette size={16} color="#fff" />
+          </div>
           <div>
             <div className="sidebar__logo-name">RenGoFun</div>
             <div className="sidebar__logo-ver">v2.4 Engine</div>
@@ -58,17 +81,19 @@ function MainLayout({ currentView, onNavigate, children }) {
         {NAV_SECTIONS.map((section) => (
           <div className="sidebar__section" key={section.label}>
             <div className="sidebar__section-label">{section.label}</div>
-            {section.items.map((item) => (
+            {section.items.map(({ id, Icon, label, count }) => (
               <button
-                key={item.id}
-                id={`nav-${item.id}`}
-                className={`sidebar__item ${currentView === item.id ? "active" : ""}`}
-                onClick={() => onNavigate(item.id)}
+                key={id}
+                id={`nav-${id}`}
+                className={`sidebar__item ${currentView === id ? "active" : ""}`}
+                onClick={() => onNavigate(id)}
               >
-                <span className="sidebar__item-icon">{item.icon}</span>
-                {item.label}
-                {item.count && (
-                  <span className="sidebar__item-count">{item.count}</span>
+                <span className="sidebar__item-icon">
+                  <Icon size={15} strokeWidth={1.75} />
+                </span>
+                {label}
+                {count && (
+                  <span className="sidebar__item-count">{count}</span>
                 )}
               </button>
             ))}
@@ -79,18 +104,12 @@ function MainLayout({ currentView, onNavigate, children }) {
 
         {/* Footer status */}
         <div className="sidebar__footer">
-          <div className="status-row">
-            <span className="status-dot status-dot--green" />
-            Tauri IPC Connected
-          </div>
-          <div className="status-row">
-            <span className="status-dot status-dot--green" />
-            Backend :8000 Online
-          </div>
-          <div className="status-row">
-            <span className="status-dot status-dot--amber" />
-            VRAM: 1.42 / 12.8 GB
-          </div>
+          {FOOTER_STATUS.map(({ cls, label }) => (
+            <div className="status-row" key={label}>
+              <span className={`status-dot ${cls}`} />
+              {label}
+            </div>
+          ))}
         </div>
       </aside>
 
@@ -99,10 +118,11 @@ function MainLayout({ currentView, onNavigate, children }) {
         {/* Top header */}
         <header className="top-header">
           <div className="top-header__breadcrumb">
-            RenGoFun › <span>
+            RenGoFun ›{" "}
+            <span>
               {currentView === "dashboard" ? "Tổng quan" :
-               currentView === "editor"    ? "Editor chính" :
-               currentView}
+                currentView === "editor" ? "Editor chính" :
+                  currentView}
             </span>
           </div>
           <div className="header-chips">

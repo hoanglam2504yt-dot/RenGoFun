@@ -1,6 +1,9 @@
 /* ── Reset & root ── */
 :root {
-  font-family: 'Inter', Avenir, Helvetica, Arial, sans-serif;
+  /* Kế thừa Inter từ layout.css token.
+     App.css chỉ set fallback cho trường hợp
+     EditorPage render độc lập không có MainLayout. */
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
   font-size: 16px;
   line-height: 1.5;
   font-weight: 400;
@@ -9,6 +12,8 @@
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-optical-sizing: auto;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -200,23 +205,22 @@
   font-size: 1rem;
 }
 
-/* ── Spinners ── */
+/* ── Spinners — Lucide Loader2 ── */
 .filter-item__spinner,
 .spinner-ring {
-  display: inline-block;
-  width: 18px;
-  height: 18px;
-  border: 2px solid #c7d2fe;
-  border-top-color: #6366f1;
-  border-radius: 50%;
   animation: spin 0.7s linear infinite;
   flex-shrink: 0;
+  color: #6366f1;
 }
 
-.spinner-ring {
+/* Legacy border spinner (fallback) */
+.spinner-ring:not(svg) {
+  display: inline-block;
   width: 32px;
   height: 32px;
-  border-width: 3px;
+  border: 3px solid #c7d2fe;
+  border-top-color: #6366f1;
+  border-radius: 50%;
 }
 
 @keyframes spin {
@@ -335,11 +339,9 @@
 .file-row__err    { color: #ef4444; font-weight: 700; }
 
 .file-row__spinner {
-  display: inline-block;
-  width: 14px; height: 14px;
-  border: 2px solid #c7d2fe;
-  border-top-color: #6366f1;
-  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  color: #6366f1;
   animation: spin 0.7s linear infinite;
 }
 
@@ -474,6 +476,9 @@
   outline: none;
   width: 100%;
   box-sizing: border-box;
+  /* Nguyên tắc 3: tất cả input số đều dùng tabular-nums
+     Giá trị 1920 và 320 phải cùng chiều rộng — không bị lệch */
+  font-variant-numeric: tabular-nums;
 }
 .cfg-field input:focus,
 .cfg-field select:focus {

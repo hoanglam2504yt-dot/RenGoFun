@@ -45,14 +45,18 @@
 }
 
 .stat-card__value {
+  /* Nguyên tắc 3: giá trị số lớn nhất trong app — tabular-nums bắt buộc */
   font-size: 1.9rem;
-  font-weight: 800;
+  font-weight: var(--fw-strong, 660); /* 660 thay vì 800 */
   color: var(--text-primary);
   line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em; /* heading số lớn — tracking – nhẹ cho mướt mà hơn */
 }
 
 .stat-card__sub {
-  font-size: 0.75rem;
+  font-size: var(--fs-xs, 0.625rem); /* 10px */
+  font-weight: var(--fw-normal, 400);
   color: var(--text-muted);
 }
 
@@ -80,8 +84,21 @@
 }
 
 .gpu-stat { display: flex; flex-direction: column; gap: 1px; }
-.gpu-stat__lbl { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
-.gpu-stat__val { font-size: 0.82rem; font-weight: 700; color: var(--text-primary); }
+.gpu-stat__lbl {
+  font-size: var(--fs-xs, 0.625rem);
+  font-weight: var(--fw-normal, 400);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.gpu-stat__val {
+  /* Nguyên tắc 3: GPU VRAM, Temp, Watt — cần tabular-nums vì update theo thời gian thực */
+  font-size: var(--fs-sm, 0.6875rem);
+  font-weight: var(--fw-ui, 420);
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
 
 /* ── Launchpad Grid ── */
 .launchpad {
@@ -253,8 +270,9 @@
 
 .pipeline__table th {
   text-align: left;
-  font-size: 0.65rem;
-  font-weight: 600;
+  /* Label cột: không cần bold — uppercase + letter-spacing tạo phân cấp */
+  font-size: var(--fs-xs, 0.625rem);
+  font-weight: var(--fw-normal, 400);
   text-transform: uppercase;
   letter-spacing: 0.07em;
   color: var(--text-muted);
@@ -265,10 +283,13 @@
 
 .pipeline__table td {
   padding: 9px 16px;
-  font-size: 0.75rem;
+  /* Nguyên tắc 3: dữ liệu bảng (kích thước file, số trang) — tabular-nums */
+  font-size: var(--fs-sm, 0.6875rem);
+  font-weight: var(--fw-normal, 400);
   color: var(--text-secondary);
   border-bottom: 1px solid rgba(255,255,255,0.04);
   vertical-align: middle;
+  font-variant-numeric: tabular-nums;
 }
 
 .pipeline__table tr:last-child td { border-bottom: none; }

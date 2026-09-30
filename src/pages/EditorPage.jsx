@@ -1,47 +1,69 @@
 import { useState, useRef } from "react";
 import "../App.css";
+import {
+  Contrast,
+  Sparkles,
+  Wand2,
+  Scissors,
+  Zap,
+  ScanSearch,
+  Image,
+  FolderOpen,
+  FolderInput,
+  ArrowLeftRight,
+  Copyright,
+  FileType2,
+  Download,
+  Trash2,
+  Ruler,
+  Lightbulb,
+  BarChart2,
+  CheckCircle2,
+  XCircle,
+  Loader2,
+} from "lucide-react";
 
 // ── Single-image filter options ─────────────────────────────────────────────
 const FILTER_OPTIONS = [
   {
     id: "grayscale",
     label: "Trắng đen",
-    icon: "◑",
+    Icon: Contrast,
     description: "Chuyển ảnh sang thang độ xám",
     endpoint: "http://localhost:8000/process-image",
   },
   {
     id: "harden-edge",
     label: "Tăng sắc nét viền",
-    icon: "✦",
+    Icon: Sparkles,
     description: "Làm cứng viền bán trong suốt, giữ nguyên màu gốc",
     endpoint: "http://localhost:8000/process-image-harden",
   },
   {
     id: "denoise-deskew",
     label: "Làm sạch tạp âm & bẻ thẳng",
-    icon: "🧹",
+    Icon: Wand2,
     description: "Khử nhiễu hạt, làm trắng nền giấy scan, tự động chỉnh phối cảnh",
     endpoint: "http://localhost:8000/process-image-denoise",
   },
   {
     id: "smooth-contour",
     label: "Làm mượt viền & xoá đen",
-    icon: "✂️",
+    Icon: Scissors,
     description: "Bo mượt viền bế, xoá viền đen thừa trên ảnh nền trong suốt",
     endpoint: "http://localhost:8000/process-image-smooth-contour",
   },
   {
     id: "batch",
     label: "Xử lý hàng loạt",
-    icon: "⚡",
+    Icon: Zap,
     description: "Resize, Crop, Watermark, đổi đuôi nhiều ảnh cùng lúc",
     isBatch: true,
   },
   {
     id: "blur-detect",
     label: "Lọc ảnh mờ nhòe",
-    icon: "🔍",
+    Icon: ScanSearch,
     description: "Dò ảnh out nét bằng Laplacian Variance, đánh dấu đỏ ảnh lỗi",
     isBlurDetect: true,
   },
@@ -95,7 +117,6 @@ function EditorPage() {
   const batchInputRef = useRef(null);
 
   // ── Blur-detect state ─────────────────────────────────────────────────────
-  // blurFiles: [{file, name, status, score, blurry, preview}]
   const [blurFiles, setBlurFiles]         = useState([]);
   const [blurThreshold, setBlurThreshold] = useState(100);
   const [blurRunning, setBlurRunning]     = useState(false);
@@ -242,7 +263,7 @@ function EditorPage() {
     try {
       const res = await fetch("http://localhost:8000/check-blur-batch", { method: "POST", body: formData });
       if (res.ok) {
-        const results = await res.json(); // [{filename, score, blurry}, ...]
+        const results = await res.json();
         setBlurFiles((prev) =>
           prev.map((f, i) => ({
             ...f,
@@ -275,9 +296,9 @@ function EditorPage() {
   const isBlurDetectMode = activeFilter?.isBlurDetect;
 
   const statusIcon = (s) =>
-    s === STATUS.PROCESSING ? <span className="file-row__spinner" />
-    : s === STATUS.DONE     ? <span className="file-row__check">✓</span>
-    : s === STATUS.ERROR    ? <span className="file-row__err">✕</span>
+    s === STATUS.PROCESSING ? <Loader2 size={14} className="file-row__spinner" />
+    : s === STATUS.DONE     ? <CheckCircle2 size={14} className="file-row__check" />
+    : s === STATUS.ERROR    ? <XCircle size={14} className="file-row__err" />
     : null;
 
   const blurryCount = blurFiles.filter((f) => f.blurry).length;
@@ -299,10 +320,13 @@ function EditorPage() {
           onClick={() => fileInputRef.current?.click()}
         >
           {originalImage ? (
-            <span className="upload-zone__hint">📁 Nhấn để đổi ảnh khác</span>
+            <span className="upload-zone__hint">
+              <FolderInput size={14} style={{ display: "inline", marginRight: 5, verticalAlign: "middle" }} />
+              Nhấn để đổi ảnh khác
+            </span>
           ) : (
             <>
-              <span className="upload-zone__icon">🖼️</span>
+              <span className="upload-zone__icon"><Image size={40} strokeWidth={1.2} /></span>
               <span className="upload-zone__text">Kéo thả hoặc nhấn để chọn ảnh</span>
               <span className="upload-zone__hint">PNG, JPG, WEBP...</span>
             </>
@@ -318,7 +342,6 @@ function EditorPage() {
           {/* ── Cột trái ── */}
           <div className="image-panel">
             {isBlurDetectMode ? (
-              /* ── Blur-detect: drop zone + file list ── */
               <>
                 <div className="panel-label">Ảnh cần kiểm tra</div>
                 <div
@@ -326,10 +349,13 @@ function EditorPage() {
                   onClick={() => blurInputRef.current?.click()}
                 >
                   {blurFiles.length ? (
-                    <span className="upload-zone__hint">📁 Nhấn để thêm / đổi ảnh</span>
+                    <span className="upload-zone__hint">
+                      <FolderOpen size={14} style={{ display: "inline", marginRight: 5, verticalAlign: "middle" }} />
+                      Nhấn để thêm / đổi ảnh
+                    </span>
                   ) : (
                     <>
-                      <span className="upload-zone__icon">🔍</span>
+                      <span className="upload-zone__icon"><ScanSearch size={36} strokeWidth={1.2} /></span>
                       <span className="upload-zone__text">Chọn nhiều ảnh để kiểm tra độ nét</span>
                       <span className="upload-zone__hint">PNG, JPG, WEBP...</span>
                     </>
@@ -338,7 +364,6 @@ function EditorPage() {
                     onChange={handleBlurFileSelect} style={{ display: "none" }} />
                 </div>
 
-                {/* Danh sách file blur */}
                 {blurFiles.length > 0 && (
                   <ul className="file-list">
                     {blurFiles.map((f, i) => (
@@ -347,10 +372,8 @@ function EditorPage() {
                         f.blurry === false ? "file-row--sharp"  :
                         `file-row--${f.status}`
                       }`}>
-                        {/* Thumbnail nhỏ */}
                         <img src={f.preview} alt="" className="file-row__thumb" />
                         <span className="file-row__name" title={f.name}>{f.name}</span>
-                        {/* Score badge */}
                         {f.score !== null && (() => {
                           const lb = blurLabel(f.score, blurThreshold);
                           return (
@@ -361,33 +384,33 @@ function EditorPage() {
                         })()}
                         <span className="file-row__status">{statusIcon(f.status)}</span>
                         {!blurRunning && (
-                          <button className="file-row__remove" onClick={() => removeBlurFile(i)} title="Xoá">×</button>
+                          <button className="file-row__remove" onClick={() => removeBlurFile(i)} title="Xoá">
+                            <XCircle size={14} />
+                          </button>
                         )}
                       </li>
                     ))}
                   </ul>
                 )}
 
-                {/* Nút hành động blur */}
                 <div className="batch-actions">
                   <button className="btn-run btn-run--blue"
                     onClick={runBlurCheck}
                     disabled={blurRunning || !blurFiles.length}
                   >
                     {blurRunning
-                      ? <><span className="filter-item__spinner" /> Đang phân tích...</>
-                      : <><span>🔍</span> Kiểm tra độ nét</>
+                      ? <><Loader2 size={14} className="filter-item__spinner" /> Đang phân tích...</>
+                      : <><ScanSearch size={14} /> Kiểm tra độ nét</>
                     }
                   </button>
                   {blurDone && blurryCount > 0 && (
                     <button className="btn-remove-blurry" onClick={removeBlurryFiles}>
-                      🗑 Xoá {blurryCount} ảnh mờ khỏi danh sách
+                      <Trash2 size={14} /> Xoá {blurryCount} ảnh mờ khỏi danh sách
                     </button>
                   )}
                 </div>
               </>
             ) : isBatchMode ? (
-              /* ── Batch: drop zone + file list ── */
               <>
                 <div className="panel-label">Ảnh hàng loạt</div>
                 <div
@@ -395,10 +418,13 @@ function EditorPage() {
                   onClick={() => batchInputRef.current?.click()}
                 >
                   {batchFiles.length ? (
-                    <span className="upload-zone__hint">📁 Nhấn để thêm / đổi ảnh</span>
+                    <span className="upload-zone__hint">
+                      <FolderOpen size={14} style={{ display: "inline", marginRight: 5, verticalAlign: "middle" }} />
+                      Nhấn để thêm / đổi ảnh
+                    </span>
                   ) : (
                     <>
-                      <span className="upload-zone__icon">📂</span>
+                      <span className="upload-zone__icon"><FolderOpen size={40} strokeWidth={1.2} /></span>
                       <span className="upload-zone__text">Nhấn để chọn nhiều ảnh</span>
                       <span className="upload-zone__hint">Hỗ trợ chọn cùng lúc nhiều file</span>
                     </>
@@ -414,7 +440,9 @@ function EditorPage() {
                         <span className="file-row__name" title={f.name}>{f.name}</span>
                         <span className="file-row__status">{statusIcon(f.status)}</span>
                         {!batchRunning && f.status !== STATUS.PROCESSING && (
-                          <button className="file-row__remove" onClick={() => removeBatchFile(i)} title="Xoá">×</button>
+                          <button className="file-row__remove" onClick={() => removeBatchFile(i)} title="Xoá">
+                            <XCircle size={14} />
+                          </button>
                         )}
                       </li>
                     ))}
@@ -425,20 +453,19 @@ function EditorPage() {
                   <button className="btn-run" onClick={runBatch}
                     disabled={batchRunning || !batchFiles.length}>
                     {batchRunning
-                      ? <><span className="filter-item__spinner" /> Đang xử lý...</>
-                      : <><span>⚡</span> Chạy hàng loạt</>
+                      ? <><Loader2 size={14} className="filter-item__spinner" /> Đang xử lý...</>
+                      : <><Zap size={14} /> Chạy hàng loạt</>
                     }
                   </button>
                   {zipUrl && (
                     <a className="btn-download" href={zipUrl} download="batch_output.zip">
-                      <span className="btn-download__icon">⬇</span>
+                      <Download size={16} className="btn-download__icon" />
                       Tải ZIP về máy
                     </a>
                   )}
                 </div>
               </>
             ) : (
-              /* ── Single image: preview gốc ── */
               <>
                 <div className="panel-label">Ảnh gốc</div>
                 <img src={originalImage} alt="Original" className="preview-image" />
@@ -456,17 +483,19 @@ function EditorPage() {
                   className={`filter-item ${activeFilter?.id === filter.id ? "active" : ""}`}
                   onClick={() => handleFilterSelect(filter)}
                 >
-                  <span className="filter-item__icon">{filter.icon}</span>
+                  <span className="filter-item__icon">
+                    <filter.Icon size={20} strokeWidth={1.5} />
+                  </span>
                   <div className="filter-item__info">
                     <span className="filter-item__label">{filter.label}</span>
                     <span className="filter-item__desc">{filter.description}</span>
                   </div>
                   {activeFilter?.id === filter.id && isLoading && (
-                    <span className="filter-item__spinner" />
+                    <Loader2 size={16} className="filter-item__spinner" />
                   )}
                   {activeFilter?.id === filter.id && !isLoading && processedImage &&
                     !filter.isBatch && !filter.isBlurDetect && (
-                    <span className="filter-item__check">✓</span>
+                    <CheckCircle2 size={16} className="filter-item__check" />
                   )}
                 </li>
               ))}
@@ -476,15 +505,13 @@ function EditorPage() {
           {/* ── Cột phải: kết quả / config ── */}
           <div className="image-panel">
             {isBlurDetectMode ? (
-              /* ── Blur-detect config + summary ── */
               <>
                 <div className="panel-label">Cấu hình & Kết quả</div>
                 <div className="batch-config">
 
-                  {/* Ngưỡng Laplacian */}
                   <div className="cfg-section cfg-section--active">
                     <div className="cfg-toggle cfg-toggle--static">
-                      <span className="cfg-toggle__icon">📐</span>
+                      <span className="cfg-toggle__icon"><Ruler size={16} /></span>
                       <span className="cfg-toggle__label">Ngưỡng phát hiện mờ</span>
                     </div>
                     <div className="cfg-col">
@@ -501,7 +528,7 @@ function EditorPage() {
                         {[
                           { label: "Nghiêm ngặt", val: 200 },
                           { label: "Cân bằng",    val: 100 },
-                          { label: "Dễ tính",      val: 40  },
+                          { label: "Dễ tính",     val: 40  },
                         ].map(({ label, val }) => (
                           <button key={val}
                             className={`cfg-preset-btn ${blurThreshold === val ? "active" : ""}`}
@@ -516,44 +543,41 @@ function EditorPage() {
                     </div>
                   </div>
 
-                  {/* Bảng tóm tắt */}
                   {blurDone && (
                     <div className="blur-summary">
                       <div className="blur-summary__row blur-summary__row--sharp">
-                        <span className="blur-summary__icon">✅</span>
+                        <CheckCircle2 size={16} className="blur-summary__icon" style={{ color: "#4ade80" }} />
                         <span className="blur-summary__label">Ảnh nét</span>
                         <span className="blur-summary__count">{sharpCount}</span>
                       </div>
                       <div className="blur-summary__row blur-summary__row--blurry">
-                        <span className="blur-summary__icon">🔴</span>
+                        <XCircle size={16} className="blur-summary__icon" style={{ color: "#f87171" }} />
                         <span className="blur-summary__label">Ảnh mờ / lỗi</span>
                         <span className="blur-summary__count">{blurryCount}</span>
                       </div>
                       <div className="blur-summary__row">
-                        <span className="blur-summary__icon">📊</span>
+                        <BarChart2 size={16} className="blur-summary__icon" style={{ color: "#818cf8" }} />
                         <span className="blur-summary__label">Tổng cộng</span>
                         <span className="blur-summary__count">{blurFiles.length}</span>
                       </div>
                     </div>
                   )}
 
-                  {/* Hướng dẫn */}
                   <div className="cfg-section">
                     <div className="cfg-toggle cfg-toggle--static">
-                      <span className="cfg-toggle__icon">💡</span>
+                      <span className="cfg-toggle__icon"><Lightbulb size={16} /></span>
                       <span className="cfg-toggle__label">Cách hoạt động</span>
                     </div>
                     <p className="blur-explain">
                       Thuật toán tính <strong>phương sai Laplacian</strong> của ảnh xám.
                       Ảnh nét có cạnh rõ → phương sai cao. Ảnh mờ → phương sai thấp.
-                      Nếu điểm số &lt; ngưỡng → đánh dấu 🔴 <em>mờ nhòe</em>.
+                      Nếu điểm số &lt; ngưỡng → đánh dấu <em>mờ nhòe</em>.
                     </p>
                   </div>
 
                 </div>
               </>
             ) : isBatchMode ? (
-              /* ── Batch config ── */
               <>
                 <div className="panel-label">Cấu hình xử lý</div>
                 <div className="batch-config">
@@ -562,7 +586,7 @@ function EditorPage() {
                     <label className="cfg-toggle">
                       <input type="checkbox" checked={batchConfig.resizeEnabled}
                         onChange={(e) => setCfg("resizeEnabled", e.target.checked)} />
-                      <span className="cfg-toggle__icon">↔</span>
+                      <span className="cfg-toggle__icon"><ArrowLeftRight size={16} /></span>
                       <span className="cfg-toggle__label">Resize</span>
                     </label>
                     {batchConfig.resizeEnabled && (
@@ -586,7 +610,7 @@ function EditorPage() {
                     <label className="cfg-toggle">
                       <input type="checkbox" checked={batchConfig.cropEnabled}
                         onChange={(e) => setCfg("cropEnabled", e.target.checked)} />
-                      <span className="cfg-toggle__icon">✂</span>
+                      <span className="cfg-toggle__icon"><Scissors size={16} /></span>
                       <span className="cfg-toggle__label">Crop tỉ lệ</span>
                     </label>
                     {batchConfig.cropEnabled && (
@@ -618,7 +642,7 @@ function EditorPage() {
                     <label className="cfg-toggle">
                       <input type="checkbox" checked={batchConfig.wmEnabled}
                         onChange={(e) => setCfg("wmEnabled", e.target.checked)} />
-                      <span className="cfg-toggle__icon">©</span>
+                      <span className="cfg-toggle__icon"><Copyright size={16} /></span>
                       <span className="cfg-toggle__label">Watermark</span>
                     </label>
                     {batchConfig.wmEnabled && (
@@ -659,7 +683,7 @@ function EditorPage() {
 
                   <div className="cfg-section">
                     <div className="cfg-toggle cfg-toggle--static">
-                      <span className="cfg-toggle__icon">🗂</span>
+                      <span className="cfg-toggle__icon"><FileType2 size={16} /></span>
                       <span className="cfg-toggle__label">Định dạng đầu ra</span>
                     </div>
                     <div className="cfg-format-group">
@@ -676,21 +700,20 @@ function EditorPage() {
                 </div>
               </>
             ) : (
-              /* ── Single image result ── */
               <>
                 <div className="panel-label">
                   {activeFilter ? `Kết quả: ${activeFilter.label}` : "Kết quả"}
                 </div>
                 {isLoading ? (
                   <div className="result-placeholder loading">
-                    <span className="spinner-ring" />
+                    <Loader2 size={32} className="spinner-ring" />
                     <span>Đang xử lý...</span>
                   </div>
                 ) : processedImage ? (
                   <>
                     <img src={processedImage} alt="Processed" className="preview-image" />
                     <button className="btn-download" onClick={handleDownload}>
-                      <span className="btn-download__icon">⬇</span>
+                      <Download size={16} className="btn-download__icon" />
                       Tải ảnh về máy
                     </button>
                   </>

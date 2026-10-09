@@ -1,0 +1,424 @@
+/* ══════════════════════════════════════════════════════════════════════
+   SETTINGS PAGE — JLight Theme
+   Nền trắng ngà, typography rõ ràng, dễ đọc
+══════════════════════════════════════════════════════════════════════ */
+
+.settings-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+  color: #1e293b;
+}
+
+/* ── Page header ─────────────────────────────────────────────────────── */
+.settings-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.settings-header__title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.3px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-header__sub {
+  font-size: 0.78rem;
+  color: #64748b;
+  margin: 0;
+}
+
+/* ── Two-column layout ───────────────────────────────────────────────── */
+.settings-body {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+/* ── Settings sidebar nav ────────────────────────────────────────────── */
+.settings-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 8px;
+  position: sticky;
+  top: 0;
+}
+
+.settings-nav__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 7px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #475569;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  text-align: left;
+  transition: background 0.15s, color 0.15s;
+  width: 100%;
+}
+
+.settings-nav__item:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.settings-nav__item.active {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* ── Panels container ────────────────────────────────────────────────── */
+.settings-panels {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ── Card (each section) ─────────────────────────────────────────────── */
+.s-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.s-card__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  border-bottom: 1px solid #f1f5f9;
+  background: #f8fafc;
+}
+
+.s-card__icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.s-card__icon--purple  { background: linear-gradient(135deg,#ede9fe,#ddd6fe); color: #7c3aed; }
+.s-card__icon--blue    { background: linear-gradient(135deg,#dbeafe,#bfdbfe); color: #2563eb; }
+.s-card__icon--amber   { background: linear-gradient(135deg,#fef3c7,#fde68a); color: #d97706; }
+.s-card__icon--green   { background: linear-gradient(135deg,#d1fae5,#a7f3d0); color: #059669; }
+.s-card__icon--rose    { background: linear-gradient(135deg,#ffe4e6,#fecdd3); color: #e11d48; }
+.s-card__icon--slate   { background: linear-gradient(135deg,#f1f5f9,#e2e8f0); color: #475569; }
+
+.s-card__title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #0f172a;
+  flex: 1;
+}
+
+.s-card__badge {
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: #e0e7ff;
+  color: #4338ca;
+}
+
+/* ── Row ─────────────────────────────────────────────────────────────── */
+.s-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 18px;
+  border-bottom: 1px solid #f1f5f9;
+  transition: background 0.12s;
+}
+
+.s-row:last-child {
+  border-bottom: none;
+}
+
+.s-row:hover {
+  background: #f8fafc;
+}
+
+.s-row__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.s-row__label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.s-row__sub {
+  font-size: 0.68rem;
+  color: #94a3b8;
+  margin-top: 1px;
+}
+
+.s-row__control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* ── Toggle switch ───────────────────────────────────────────────────── */
+.toggle {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  cursor: pointer;
+}
+
+.toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.toggle__track {
+  position: absolute;
+  inset: 0;
+  border-radius: 20px;
+  background: #cbd5e1;
+  transition: background 0.2s;
+}
+
+.toggle input:checked + .toggle__track {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+}
+
+.toggle__thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  transition: transform 0.2s;
+  pointer-events: none;
+}
+
+.toggle input:checked ~ .toggle__thumb {
+  transform: translateX(16px);
+}
+
+/* ── Select dropdown ─────────────────────────────────────────────────── */
+.s-select {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #1e293b;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 7px;
+  padding: 5px 28px 5px 9px;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 7px center;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.s-select:focus {
+  outline: none;
+  border-color: #6366f1;
+}
+
+/* ── Input text ──────────────────────────────────────────────────────── */
+.s-input {
+  font-size: 0.72rem;
+  color: #1e293b;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 7px;
+  padding: 5px 10px;
+  width: 180px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.s-input:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+  background: #fff;
+}
+
+/* ── Value badge (readonly) ──────────────────────────────────────────── */
+.s-val {
+  font-size: 0.71rem;
+  font-weight: 600;
+  color: #475569;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 3px 9px;
+}
+
+.s-val--green  { background:#dcfce7; color:#16a34a; border-color:#bbf7d0; }
+.s-val--blue   { background:#dbeafe; color:#2563eb; border-color:#bfdbfe; }
+.s-val--amber  { background:#fef9c3; color:#b45309; border-color:#fef08a; }
+.s-val--red    { background:#fee2e2; color:#dc2626; border-color:#fecaca; }
+
+/* ── Theme picker ────────────────────────────────────────────────────── */
+.theme-swatches {
+  display: flex;
+  gap: 6px;
+}
+
+.theme-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: transform 0.15s, border-color 0.15s;
+}
+
+.theme-swatch:hover {
+  transform: scale(1.15);
+}
+
+.theme-swatch.selected {
+  border-color: #6366f1;
+  transform: scale(1.1);
+  box-shadow: 0 0 0 2px rgba(99,102,241,0.3);
+}
+
+/* ── Slider ──────────────────────────────────────────────────────────── */
+.s-slider {
+  width: 120px;
+  accent-color: #6366f1;
+  cursor: pointer;
+}
+
+/* ── Button ──────────────────────────────────────────────────────────── */
+.s-btn {
+  font-size: 0.71rem;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 7px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.s-btn--primary {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+}
+
+.s-btn--primary:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99,102,241,0.35);
+}
+
+.s-btn--ghost {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+.s-btn--ghost:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.s-btn--danger {
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.s-btn--danger:hover {
+  background: #fecaca;
+}
+
+/* ── Save bar ────────────────────────────────────────────────────────── */
+.settings-save-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px 18px;
+  box-shadow: 0 -2px 12px rgba(0,0,0,0.05);
+}
+
+.settings-save-bar__note {
+  font-size: 0.72rem;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.settings-save-bar__actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* ── System info grid ────────────────────────────────────────────────── */
+.sys-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+}
+
+.sys-info-grid .s-row {
+  border-right: 1px solid #f1f5f9;
+}
+
+.sys-info-grid .s-row:nth-child(even) {
+  border-right: none;
+}
+
+/* ── Progress bar ────────────────────────────────────────────────────── */
+.s-progress {
+  width: 80px;
+  height: 5px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.s-progress__fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+.s-progress__fill--purple { background: linear-gradient(90deg,#6366f1,#a855f7); }
+.s-progress__fill--blue   { background: linear-gradient(90deg,#0ea5e9,#6366f1); }
+.s-progress__fill--green  { background: linear-gradient(90deg,#10b981,#06b6d4); }
+.s-progress__fill--amber  { background: linear-gradient(90deg,#f59e0b,#f97316); }

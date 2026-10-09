@@ -132,12 +132,25 @@ def method_3_guided_filter(img):
     return result
 
 if __name__ == "__main__":
+    import sys
     out_dir = "demo_smoothing_output"
     os.makedirs(out_dir, exist_ok=True)
     
-    # 1. Tạo ảnh gốc răng cưa
-    print("Đang tạo ảnh gốc...")
-    raw_img = create_jagged_image()
+    # 1. Tạo ảnh gốc hoặc đọc ảnh từ file
+    if len(sys.argv) > 1:
+        img_path = sys.argv[1]
+        print(f"Đang đọc ảnh từ: {img_path}...")
+        raw_img = cv2.imread(img_path, cv2.IMREAD_UNCHANGED)
+        if raw_img is None:
+            print(f"Lỗi: Không thể đọc được ảnh tại '{img_path}'. Hãy kiểm tra lại đường dẫn.")
+            sys.exit(1)
+        if len(raw_img.shape) < 3 or raw_img.shape[2] != 4:
+            print("Lỗi: Ảnh phải có định dạng PNG và chứa kênh trong suốt (Alpha channel).")
+            sys.exit(1)
+    else:
+        print("Đang tạo ảnh gốc tự động...")
+        raw_img = create_jagged_image()
+
     cv2.imwrite(f"{out_dir}/0_original_jagged.png", raw_img)
     
     # 2. Xử lý Phương pháp 1 (SDF)

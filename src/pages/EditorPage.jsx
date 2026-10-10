@@ -24,34 +24,36 @@ import {
 } from "lucide-react";
 
 // ── Single-image filter options ─────────────────────────────────────────────
+const ENGINE_URL = "http://localhost:8001"; // Port mới cho Python Engine
+
 const FILTER_OPTIONS = [
   {
     id: "grayscale",
     label: "Trắng đen",
     Icon: Contrast,
     description: "Chuyển ảnh sang thang độ xám",
-    endpoint: "http://localhost:8000/process-image",
+    endpoint: `${ENGINE_URL}/process-image`,
   },
   {
     id: "harden-edge",
     label: "Tăng sắc nét viền",
     Icon: Sparkles,
     description: "Làm cứng viền bán trong suốt, giữ nguyên màu gốc",
-    endpoint: "http://localhost:8000/process-image-harden",
+    endpoint: `${ENGINE_URL}/process-image-harden`,
   },
   {
     id: "denoise-deskew",
     label: "Làm sạch tạp âm & bẻ thẳng",
     Icon: Wand2,
     description: "Khử nhiễu hạt, làm trắng nền giấy scan, tự động chỉnh phối cảnh",
-    endpoint: "http://localhost:8000/process-image-denoise",
+    endpoint: `${ENGINE_URL}/process-image-denoise`,
   },
   {
     id: "smooth-contour",
     label: "Làm mượt viền & xoá đen",
     Icon: Scissors,
     description: "Bo mượt viền bế, xoá viền đen thừa trên ảnh nền trong suốt",
-    endpoint: "http://localhost:8000/process-image-smooth-contour",
+    endpoint: `${ENGINE_URL}/process-image-smooth-contour`,
   },
   {
     id: "batch",
@@ -162,8 +164,12 @@ function EditorPage() {
     const formData = new FormData();
     formData.append("file", originalFile);
 
+    const token = localStorage.getItem("rengofun_token");
+    const headers = {};
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
     try {
-      const res = await fetch(filter.endpoint, { method: "POST", body: formData });
+      const res = await fetch(filter.endpoint, { method: "POST", headers, body: formData });
       if (res.ok) {
         const blob = await res.blob();
         setProcessedImage(URL.createObjectURL(blob));
@@ -212,8 +218,12 @@ function EditorPage() {
     formData.append("wm_font_scale",  batchConfig.wmFontScale);
     formData.append("output_format",  batchConfig.outputFormat);
 
+    const token = localStorage.getItem("rengofun_token");
+    const headers = {};
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
     try {
-      const res = await fetch("http://localhost:8000/process-batch", { method: "POST", body: formData });
+      const res = await fetch(`${ENGINE_URL}/process-batch`, { method: "POST", headers, body: formData });
       if (res.ok) {
         const blob = await res.blob();
         setZipUrl(URL.createObjectURL(blob));
@@ -260,8 +270,12 @@ function EditorPage() {
     blurFiles.forEach(({ file }) => formData.append("files", file));
     formData.append("threshold", blurThreshold);
 
+    const token = localStorage.getItem("rengofun_token");
+    const headers = {};
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
     try {
-      const res = await fetch("http://localhost:8000/check-blur-batch", { method: "POST", body: formData });
+      const res = await fetch(`${ENGINE_URL}/check-blur-batch`, { method: "POST", headers, body: formData });
       if (res.ok) {
         const results = await res.json();
         setBlurFiles((prev) =>

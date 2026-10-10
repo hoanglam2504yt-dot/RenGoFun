@@ -25,8 +25,8 @@ IF NOT EXIST "%VENV_PYTHON%" (
     exit /b 1
 )
 
-echo  [1/2] Khoi dong Python Backend ^(FastAPI - Port 8000^)...
-start "RenGoFun - Python Backend" cmd /k "cd /d "%PYTHON_ENGINE%" && "%VENV_PYTHON%" -m uvicorn main:app --port 8000 --reload"
+echo  [1/2] Khoi dong Python Backend ^(FastAPI - Port 8001^)...
+start "RenGoFun - Python Backend" cmd /k "cd /d "%PYTHON_ENGINE%" && "%VENV_PYTHON%" -m uvicorn main:app --port 8001 --reload"
 
 :: Doi 3 giay de backend khoi dong truoc
 timeout /t 3 /nobreak >nul
@@ -36,7 +36,7 @@ start "RenGoFun - Tauri Frontend" cmd /k "cd /d "%PROJECT_ROOT%" && npm run taur
 
 echo.
 echo  [OK] Ca hai tien trinh da duoc khoi dong!
-echo  - Backend : http://localhost:8000
+echo  - Backend : http://localhost:8001
 echo  - Frontend: Cua so Tauri se tu mo
 echo.
 echo  De tat app: dong ca 2 cua so terminal phia tren.

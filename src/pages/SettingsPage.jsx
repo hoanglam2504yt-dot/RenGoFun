@@ -1,8 +1,9 @@
 import { useState } from "react";
 import "../styles/settings.css";
 import {
-  Settings, Palette, Cpu, Monitor, FolderOpen, Bell, Info,
-  Save, RotateCcw, CheckCircle, Zap, HardDrive, Sliders, Printer, Activity,
+  Settings, Palette, Cpu, Monitor, FolderOpen, Bell,
+  Save, RotateCcw, CheckCircle, Sliders, Printer,
+  LogOut, User, Shield, Crown,
 } from "lucide-react";
 import { useSettings } from "../hooks/useSettings";
 
@@ -323,9 +324,95 @@ function PanelHeThong() {
 }
 
 // ══════════════════════════════════════════════════════════════════════
+//  ACCOUNT CARD — hiển thị thông tin đăng nhập & nút đăng xuất
+// ══════════════════════════════════════════════════════════════════════
+function AccountCard({ user, onLogout }) {
+  const [confirming, setConfirming] = useState(false);
+
+  if (!user) return null;
+
+  const planLabel = user.plan === "pro" ? "Pro" : user.plan === "admin" ? "Admin" : "Free";
+  const planColor = user.plan === "pro" ? "#f59e0b" : user.plan === "admin" ? "#6366f1" : "#64748b";
+
+  return (
+    <div style={{
+      background: "linear-gradient(135deg, rgba(99,102,241,0.06) 0%, rgba(139,92,246,0.04) 100%)",
+      border: "1px solid rgba(99,102,241,0.18)",
+      borderRadius: 12, padding: "14px 16px",
+      display: "flex", alignItems: "center", gap: 12,
+      marginBottom: 12,
+    }}>
+      {/* Avatar */}
+      <div style={{
+        width: 40, height: 40, borderRadius: "50%", flexShrink: 0,
+        background: "linear-gradient(135deg,#6366f1,#8b5cf6)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        boxShadow: "0 2px 8px rgba(99,102,241,0.35)",
+      }}>
+        <User size={18} color="white" />
+      </div>
+
+      {/* Info */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--text-primary,#0f172a)",
+          display: "flex", alignItems: "center", gap: 6 }}>
+          {user.username}
+          <span style={{
+            fontSize: "0.65rem", fontWeight: 700, padding: "2px 7px", borderRadius: 20,
+            background: `${planColor}22`, color: planColor, border: `1px solid ${planColor}44`,
+            display: "flex", alignItems: "center", gap: 3,
+          }}>
+            {user.plan === "pro" ? <Crown size={9}/> : <Shield size={9}/>}
+            {planLabel}
+          </span>
+        </div>
+        <div style={{ fontSize: "0.7rem", color: "#64748b", marginTop: 2 }}>
+          Đã xác thực · MongoDB Atlas · JWT
+        </div>
+      </div>
+
+      {/* Logout */}
+      {!confirming ? (
+        <button
+          onClick={() => setConfirming(true)}
+          style={{
+            display: "flex", alignItems: "center", gap: 5,
+            padding: "6px 12px", borderRadius: 8, cursor: "pointer",
+            background: "rgba(239,68,68,0.07)", border: "1px solid rgba(239,68,68,0.2)",
+            color: "#ef4444", fontSize: "0.72rem", fontWeight: 600,
+            transition: "all .2s", flexShrink: 0,
+          }}
+        >
+          <LogOut size={13} /> Đăng xuất
+        </button>
+      ) : (
+        <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+          <button
+            onClick={() => setConfirming(false)}
+            style={{
+              padding: "6px 10px", borderRadius: 7, cursor: "pointer",
+              background: "transparent", border: "1px solid rgba(255,255,255,0.12)",
+              color: "#94a3b8", fontSize: "0.72rem", fontWeight: 600,
+            }}
+          >Huỷ</button>
+          <button
+            onClick={onLogout}
+            style={{
+              padding: "6px 12px", borderRadius: 7, cursor: "pointer",
+              background: "#ef4444", border: "none",
+              color: "white", fontSize: "0.72rem", fontWeight: 700,
+            }}
+          >Xác nhận</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════
 //  MAIN PAGE
 // ══════════════════════════════════════════════════════════════════════
-function SettingsPage() {
+function SettingsPage({ user, onLogout }) {
   const [activeTab, setActiveTab] = useState("giao-dien");
   const { settings, dirty, savedAt, handleChange, handleSave, handleReset } = useSettings();
 
@@ -377,6 +464,11 @@ function SettingsPage() {
         <div className="settings-panels">
           {renderPanel()}
         </div>
+      </div>
+
+      {/* Account Card + Save bar */}
+      <div style={{ padding: "0 0 2px" }}>
+        <AccountCard user={user} onLogout={onLogout} />
       </div>
 
       {/* Save bar */}

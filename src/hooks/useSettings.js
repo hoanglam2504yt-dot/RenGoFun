@@ -132,9 +132,24 @@ export function applySettings(s) {
     if (el) el.remove();
   }
 
-  // 7. Data attribute cho body (có thể dùng CSS selector sau)
+  // 7. Data attribute cho cả documentElement và body để toàn bộ CSS selector hoạt động
+  root.dataset.theme = mode;
   document.body.dataset.theme = mode;
+  root.dataset.accentTheme = s.accentTheme;
   document.body.dataset.accentTheme = s.accentTheme;
+}
+
+// ── Hàm khởi tạo settings ngay khi app load (chạy trước React render) ──
+export function initSettingsFromStorage() {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    const settings = stored ? { ...DEFAULT_SETTINGS, ...JSON.parse(stored) } : DEFAULT_SETTINGS;
+    applySettings(settings);
+    return settings;
+  } catch (_) {
+    applySettings(DEFAULT_SETTINGS);
+    return DEFAULT_SETTINGS;
+  }
 }
 
 // ══════════════════════════════════════════════════════════════════════

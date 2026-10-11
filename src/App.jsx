@@ -5,18 +5,18 @@ import EditorPage from "./pages/EditorPage";
 import SettingsPage from "./pages/SettingsPage";
 import AuthModal from "./components/AuthModal";
 import { authService } from "./services/authService";
+import { initSettingsFromStorage } from "./hooks/useSettings";
 
 // ── View → Component map ──────────────────────────────────────────────────────
-// Thêm view mới vào đây khi build thêm trang
-function resolveView(view, navigate) {
+function resolveView(view, navigate, user, onLogout) {
   switch (view) {
     case "editor":
       return <EditorPage />;
     case "settings":
-      return <SettingsPage />;
+      return <SettingsPage user={user} onLogout={onLogout} />;
     case "dashboard":
     default:
-      return <DashboardPage onNavigate={navigate} />;
+      return <DashboardPage onNavigate={navigate} user={user} />;
   }
 }
 
@@ -25,12 +25,20 @@ function App() {
   // Auth state
   const [user, setUser] = useState(null);
 
-  // Khôi phục phiên đăng nhập từ localStorage khi app khởi động
+  // Khôi phục theme và phiên đăng nhập từ localStorage khi app khởi động
   useEffect(() => {
+    // 1. Khôi phục theme/colorMode đã lưu ngay lập tức
+    initSettingsFromStorage();
+
+    // 2. Khôi phục user session
     const token = authService.getToken();
     const storedUser = localStorage.getItem("rengofun_user");
     if (token && storedUser) {
-      setUser(JSON.parse(storedUser));
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (_) {
+        setUser(null);
+      }
     }
   }, []);
 
@@ -63,7 +71,7 @@ function App() {
       user={user}
       onLogout={handleLogout}
     >
-      {resolveView(currentView, handleNavigate)}
+      {resolveView(currentView, handleNavigate, user, handleLogout)}
     </MainLayout>
   );
 }

@@ -20,6 +20,26 @@
       href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap"
       rel="stylesheet"
     />
+    <script>
+      (function() {
+        try {
+          const s = JSON.parse(localStorage.getItem('rengofun_settings') || '{}');
+          let mode = s.colorMode;
+          if (!mode || mode === 'auto') {
+            mode = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+          }
+          document.documentElement.dataset.theme = mode;
+          if (mode === 'light') {
+            document.documentElement.style.setProperty('--bg', '#f1f5f9');
+            document.documentElement.style.setProperty('--surface', '#ffffff');
+            document.documentElement.style.setProperty('--card-bg', '#f8fafc');
+            document.documentElement.style.setProperty('--border', 'rgba(0,0,0,0.08)');
+            document.documentElement.style.setProperty('--text-primary', '#0f172a');
+            document.documentElement.style.setProperty('--text-secondary', '#475569');
+          }
+        } catch (_) {}
+      })();
+    </script>
   </head>
 
   <body>

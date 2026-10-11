@@ -1,5 +1,42 @@
-# Logs
-logs
+# ==========================================
+# RenGoFun - Git Ignore Configuration
+# ==========================================
+
+# --- Environment & Sensitive Credentials ---
+.env
+.env.*
+!.env.example
+*.local
+*.pem
+*.key
+*.p12
+*.pfx
+
+# --- Node & Frontend Dependencies / Builds ---
+node_modules/
+dist/
+dist-ssr/
+
+# --- Rust & Tauri ---
+src-tauri/target/
+src-tauri/gen/schemas/
+
+# --- Python Engine & Virtual Environments ---
+venv/
+.venv/
+python_engine/venv/
+python_engine/__pycache__/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --- Executables & Installers ---
+*.exe
+*.msi
+rustup-init.exe
+
+# --- Logs ---
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -7,36 +44,20 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
-
-# Editor directories and files
+# --- Editor & IDE Files ---
 .vscode/*
 !.vscode/extensions.json
-.idea
-.DS_Store
+.idea/
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
 
-# Node & React
-node_modules/
-dist/
-
-# Rust & Tauri
-src-tauri/target/
-
-# Python Engine
-python_engine/venv/
-python_engine/__pycache__/
-*.pyc
-
-# OS Files
+# --- OS Artifacts ---
 .DS_Store
 Thumbs.db
+desktop.ini
 
+# --- Docs / Temp Notes ---
 md/

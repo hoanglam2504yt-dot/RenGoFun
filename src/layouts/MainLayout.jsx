@@ -12,8 +12,8 @@ import {
   Cpu,
   Settings,
   CheckCircle,
-  AlertCircle,
-  Zap,
+  LogOut,
+  User,
 } from "lucide-react";
 
 // ── Nav data ─────────────────────────────────────────────────────────────────
@@ -61,7 +61,7 @@ const FOOTER_STATUS = [
 ];
 
 // ═════════════════════════════════════════════════════════════════════════════
-function MainLayout({ currentView, onNavigate, children }) {
+function MainLayout({ currentView, onNavigate, user, onLogout, children }) {
   return (
     <div className="shell">
       {/* ── Sidebar ── */}
@@ -133,6 +133,37 @@ function MainLayout({ currentView, onNavigate, children }) {
                 {c.label}
               </div>
             ))}
+            {/* ── User info + quick logout ── */}
+            {user && (
+              <div style={{
+                display: "flex", alignItems: "center", gap: 6, marginLeft: 8,
+                borderLeft: "1px solid rgba(255,255,255,0.1)", paddingLeft: 10,
+              }}>
+                <div style={{
+                  width: 22, height: 22, borderRadius: "50%",
+                  background: "linear-gradient(135deg,#6366f1,#8b5cf6)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  flexShrink: 0,
+                }}>
+                  <User size={11} color="white" />
+                </div>
+                <span style={{ fontSize: "0.68rem", color: "var(--text-secondary)", fontWeight: 600 }}>
+                  {user.username}
+                </span>
+                <button
+                  title="Đăng xuất"
+                  onClick={onLogout}
+                  style={{
+                    display: "flex", alignItems: "center", padding: "3px 7px",
+                    borderRadius: 5, cursor: "pointer",
+                    background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)",
+                    color: "#ef4444", gap: 3, fontSize: "0.62rem", fontWeight: 600,
+                  }}
+                >
+                  <LogOut size={10} /> Ra
+                </button>
+              </div>
+            )}
           </div>
         </header>
 

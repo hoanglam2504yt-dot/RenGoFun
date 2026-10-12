@@ -23,11 +23,11 @@ const NAV_SECTIONS = [
     label: "Tổng quan & Editor",
     items: [
       { id: "dashboard", Icon: LayoutDashboard, label: "Trang chủ / Tổng quan" },
-      { id: "editor", Icon: PenLine, label: "Trang chủ / Editor chính" },
+      { id: "editor", Icon: PenLine, label: "Trang chủ / Editor" },
     ],
   },
   {
-    label: "In ấn & In ấn",
+    label: "In ấn",
     items: [
       { id: "queue", Icon: Layers, label: "Xử lý hàng loạt (Queue)", count: "3" },
       { id: "mockup", Icon: Box, label: "Tạo Mockup 3D" },
@@ -144,9 +144,10 @@ function MainLayout({ currentView, onNavigate, user, onLogout, children }) {
             <span>
               {currentView === "dashboard" ? "Tổng quan" :
                 currentView === "editor" ? "Editor chính" :
-                  currentView === "settings" ? "Cài đặt & Tùy chỉnh" :
-                    currentView === "admin" ? "⚙️ Quản trị hệ thống" :
-                      currentView}
+                  currentView === "queue" ? "Xử lý hàng loạt (Batch Processing)" :
+                    currentView === "settings" ? "Cài đặt & Tùy chỉnh" :
+                      currentView === "admin" ? "⚙️ Quản trị hệ thống" :
+                        currentView}
             </span>
           </div>
           <div className="header-chips">

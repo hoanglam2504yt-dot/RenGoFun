@@ -29,7 +29,7 @@ End If
 ' bWaitOnReturn = False → không chờ lệnh kết thúc
 Dim cmdPython
 cmdPython = "cmd /c cd /d """ & strPythonEngine & """ && """ & _
-            strVenvPython & """ -m uvicorn main:app --port 8001"
+            strVenvPython & """ -m uvicorn main:app --port 8002"
 objShell.Run cmdPython, 0, False
 
 ' Chờ 3 giây để backend khởi động trước
@@ -43,7 +43,7 @@ objShell.Run cmdTauri, 0, False
 ' --- Thông báo nhẹ khi xong ---
 ' Dùng Popup thay MsgBox để tự đóng sau 4 giây (không cần bấm OK)
 objShell.Popup "RenGoFun đang khởi động..." & vbCrLf & _
-               "Backend: http://localhost:8001" & vbCrLf & _
+               "Backend: http://localhost:8002" & vbCrLf & _
                "Cửa sổ app sẽ tự xuất hiện sau vài giây.", _
                4, "RenGoFun — Đang chạy", 64
 

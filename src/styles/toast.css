@@ -1,0 +1,239 @@
+/* ══════════════════════════════════════════════════════════════════════════════
+   DOWNLOAD TOAST POPUP — GÓC DƯỚI BÊN PHẢI (SLIDE-IN 3 GIÂY)
+   Khung nền màu xanh lá nhạt pastel, mờ dần sau 3 giây
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.download-toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 999999;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.download-toast-card {
+  pointer-events: auto;
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 320px;
+  max-width: 440px;
+  padding: 14px 16px 16px 16px;
+  border-radius: 14px;
+  overflow: hidden;
+
+  /* Khung nền màu xanh lá nhạt popup theo yêu cầu */
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  box-shadow: 
+    0 10px 25px -5px rgba(16, 185, 129, 0.22),
+    0 8px 10px -6px rgba(16, 185, 129, 0.12),
+    0 0 0 1px rgba(16, 185, 129, 0.1);
+
+  color: #14532d;
+  font-family: var(--font-ui, system-ui, -apple-system, sans-serif);
+  backdrop-filter: blur(10px);
+}
+
+/* Chế độ Dark Mode: Vẫn giữ nền xanh lá nhạt / deep emerald pastel để dễ đọc và êm mắt */
+[data-theme="dark"] .download-toast-card {
+  background: rgba(6, 78, 59, 0.92);
+  border: 1px solid rgba(52, 211, 153, 0.5);
+  box-shadow: 
+    0 12px 30px -5px rgba(0, 0, 0, 0.6),
+    0 0 20px rgba(16, 185, 129, 0.25);
+  color: #ecfdf5;
+}
+
+/* ── Hiệu ứng đẩy ra (Slide-in) từ góc dưới bên phải ── */
+.download-toast-card.toast-enter {
+  animation: toastSlideInRight 0.38s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ── Hiệu ứng dần dần mất đi (Fade-out + trượt nhẹ ra) ── */
+.download-toast-card.toast-exit {
+  animation: toastSlideOutRight 0.5s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+@keyframes toastSlideInRight {
+  0% {
+    transform: translateX(115%) scale(0.96);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes toastSlideOutRight {
+  0% {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(40px) scale(0.95);
+    opacity: 0;
+  }
+}
+
+/* ── Icon tròn xanh lá ── */
+.download-toast-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: #dcfce7;
+  border: 1px solid #bbf7d0;
+  color: #15803d;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
+}
+
+[data-theme="dark"] .download-toast-icon-wrapper {
+  background: rgba(16, 185, 129, 0.25);
+  border: 1px solid rgba(52, 211, 153, 0.4);
+  color: #34d399;
+}
+
+.download-toast-icon {
+  animation: toastPulse 1.2s infinite ease-in-out;
+}
+
+@keyframes toastPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+}
+
+/* ── Nội dung chữ ── */
+.download-toast-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.download-toast-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.download-toast-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #166534;
+  letter-spacing: -0.01em;
+}
+
+[data-theme="dark"] .download-toast-title {
+  color: #a7f3d0;
+}
+
+.download-toast-tag {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #15803d;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+[data-theme="dark"] .download-toast-tag {
+  background: rgba(52, 211, 153, 0.2);
+  border-color: rgba(52, 211, 153, 0.4);
+  color: #6ee7b7;
+}
+
+.download-toast-filename {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #14532d;
+}
+
+[data-theme="dark"] .download-toast-filename {
+  color: #f0fdf4;
+}
+
+.download-toast-filename-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 250px;
+}
+
+.download-toast-msg {
+  font-size: 0.72rem;
+  color: #15803d;
+  opacity: 0.9;
+  line-height: 1.35;
+}
+
+[data-theme="dark"] .download-toast-msg {
+  color: #d1fae5;
+  opacity: 0.85;
+}
+
+/* ── Nút đóng (X) ── */
+.download-toast-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: #15803d;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+[data-theme="dark"] .download-toast-close {
+  color: #a7f3d0;
+}
+
+.download-toast-close:hover {
+  opacity: 1;
+  background: rgba(16, 185, 129, 0.15);
+  color: #14532d;
+}
+
+/* ── Thanh chạy tiến độ 3 giây ở đáy card ── */
+.download-toast-timer-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+  width: 100%;
+  animation: toastCountdown 3s linear forwards;
+}
+
+[data-theme="dark"] .download-toast-timer-bar {
+  background: linear-gradient(90deg, #34d399 0%, #10b981 100%);
+}
+
+@keyframes toastCountdown {
+  0% {
+    width: 100%;
+  }
+  100% {
+    width: 0%;
+  }
+}

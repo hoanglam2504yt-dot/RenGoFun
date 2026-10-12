@@ -1,0 +1,1124 @@
+/* ══════════════════════════════════════════════════════════════════════════════
+   BATCH PROCESS PAGE — Stylesheet
+   Kế thừa hoàn toàn typography, font chữ và hệ biến CSS từ layout.css & dashboard.css
+   Hỗ trợ hoàn hảo cả Dark Mode và Light Mode
+══════════════════════════════════════════════════════════════════════════════ */
+
+.batch-page {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  height: 100%;
+  padding-bottom: 8px;
+  color: var(--text-primary);
+  font-family: var(--font-ui, 'Inter', system-ui, sans-serif);
+  user-select: none;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   1. TOP CONTROL BAR
+══════════════════════════════════════════════════════════════════════════════ */
+.batch-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 14px;
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.batch-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Các nút thao tác chính — ĐƯỢC VIỀN BAO QUANH RÕ RÀNG, CHUẨN THIẾT KẾ NÚT BẤM */
+.batch-btn-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  padding: 6px 13px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+
+.batch-btn-action:hover {
+  background: var(--surface);
+  border-color: var(--accent);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(99, 102, 241, 0.15);
+}
+
+.batch-btn-action:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.batch-btn-icon {
+  flex-shrink: 0;
+}
+
+.batch-btn-icon.folder-icon {
+  color: var(--accent);
+}
+
+.batch-btn-icon.file-icon {
+  color: #0ea5e9;
+}
+
+/* Nút xóa hàng đợi */
+.batch-btn-danger {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.06);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.batch-btn-danger:hover {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: #ef4444;
+  color: #f87171;
+  box-shadow: 0 3px 8px rgba(239, 68, 68, 0.2);
+}
+
+/* Khung chọn Preset — Khung nút nổi bật */
+.batch-preset-select-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  padding: 5px 12px;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  transition: border-color 0.18s ease;
+}
+
+.batch-preset-select-wrap:hover {
+  border-color: var(--accent);
+}
+
+.batch-preset-label {
+  font-size: 0.7rem;
+  color: var(--accent-2);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.batch-preset-select {
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-size: 0.74rem;
+  font-weight: 600;
+  font-family: inherit;
+  outline: none;
+  cursor: pointer;
+}
+
+.batch-preset-select option {
+  background: var(--card-bg);
+  color: var(--text-primary);
+}
+
+/* Top bar bên phải */
+.batch-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.batch-status-ready {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.batch-ready-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #10b981;
+}
+
+.batch-ready-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.7);
+  animation: pulse-dot 2s infinite ease-in-out;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(0.85); }
+}
+
+.batch-dest-text {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.batch-dest-path {
+  color: var(--text-secondary);
+  font-family: monospace;
+  font-size: 0.65rem;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* Nút bắt đầu xử lý lớn */
+.batch-btn-start {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, var(--accent) 0%, #7c3aed 100%);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  font-family: inherit;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+
+.batch-btn-start:hover:not(:disabled) {
+  transform: translateY(-1.5px) scale(1.02);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.55);
+}
+
+.batch-btn-start:active:not(:disabled) {
+  transform: translateY(0) scale(0.99);
+}
+
+.batch-btn-start.running {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  border-color: rgba(239, 68, 68, 0.5);
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.4);
+}
+
+.batch-key-badge {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 0.62rem;
+  font-weight: 600;
+  margin-left: 2px;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   2. PROGRESS & REAL HARDWARE PERFORMANCE DASHBOARD
+══════════════════════════════════════════════════════════════════════════════ */
+.batch-metrics-grid {
+  display: grid;
+  grid-template-columns: 1.25fr repeat(4, 1fr);
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.batch-metric-box {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.batch-metric-box:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+}
+
+/* Viền trên trang trí nổi bật đồng bộ với stat-card ở Dashboard */
+.batch-card-accent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  border-radius: 12px 12px 0 0;
+}
+
+.progress-accent { background: linear-gradient(90deg, #6366f1 0%, #a855f7 50%, #38bdf8 100%); }
+.gpu-accent      { background: linear-gradient(90deg, #6366f1 0%, #818cf8 100%); }
+.cpu-accent      { background: linear-gradient(90deg, #8b5cf6 0%, #c084fc 100%); }
+.vram-accent     { background: linear-gradient(90deg, #0ea5e9 0%, #38bdf8 100%); }
+.error-accent    { background: linear-gradient(90deg, #10b981 0%, #34d399 100%); }
+
+/* ── THẺ TIẾN ĐỘ RENDER HÀNG LOẠT (TỐI ƯU ĐỘ TƯƠNG PHẢN & DỄ NHÌN) ── */
+.batch-progress-box {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+}
+
+.batch-progress-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.batch-progress-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.01em;
+}
+
+.batch-progress-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+}
+
+.batch-progress-pct {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--accent-2);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+/* Rãnh thanh tiến độ */
+.batch-progress-track {
+  width: 100%;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.15);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  margin: 10px 0 8px;
+  position: relative;
+}
+
+/* Màu thanh tiến độ rực rỡ, sắc nét */
+.batch-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #6366f1 0%, #8b5cf6 50%, #38bdf8 100%);
+  border-radius: 6px;
+  transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+}
+
+/* Hàng thông tin tệp hoàn tất & tệp chờ */
+.batch-progress-sub-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.72rem;
+}
+
+.batch-completed-count {
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.batch-completed-num {
+  font-weight: 800;
+  font-size: 0.88rem;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.batch-slash {
+  color: var(--text-muted);
+  margin: 0 2px;
+}
+
+/* Huy hiệu số tệp đang chờ */
+.batch-queue-badge {
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.22);
+  color: var(--accent-2);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+/* Hàng tốc độ & thời gian còn lại — Rõ ràng, tương phản cao */
+.batch-speed-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  font-size: 0.7rem;
+}
+
+.batch-speed-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.batch-speed-icon.time {
+  color: #f59e0b;
+}
+
+.batch-speed-icon.cuda {
+  color: #0ea5e9;
+}
+
+.batch-speed-lbl {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.batch-speed-val.time {
+  color: var(--text-primary);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.batch-speed-val.cuda {
+  color: #0ea5e9;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── 4 THẺ THÔNG SỐ PHẦN CỨNG ── */
+.batch-hw-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+
+.batch-hw-value {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+}
+
+.batch-hw-bar {
+  width: 100%;
+  height: 5px;
+  background: rgba(0, 0, 0, 0.15);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  margin: 7px 0 5px;
+  overflow: hidden;
+}
+
+.batch-hw-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+.batch-hw-sub {
+  font-size: 0.66rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   3. WORKSPACE: QUEUE TABLE (LEFT) + INSPECTOR (RIGHT)
+══════════════════════════════════════════════════════════════════════════════ */
+.batch-workspace {
+  display: grid;
+  grid-template-columns: 1fr 390px;
+  gap: 14px;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Thẻ bao danh sách hàng đợi */
+.batch-queue-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.batch-queue-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--card-bg);
+  flex-shrink: 0;
+}
+
+.batch-queue-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.batch-queue-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.batch-queue-tag {
+  background: rgba(99, 102, 241, 0.12);
+  color: var(--accent-2);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  font-size: 0.66rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+/* Các nút Tab lọc — Viền rõ ràng như nút bấm */
+.batch-filter-tabs {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.batch-tab-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-family: inherit;
+  padding: 4px 11px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.batch-tab-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--accent);
+  background: var(--card-bg);
+}
+
+.batch-tab-btn.active {
+  color: #ffffff;
+  background: var(--accent);
+  border-color: var(--accent);
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.35);
+}
+
+/* Bảng hàng đợi */
+.batch-table-wrap {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+}
+
+.batch-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.72rem;
+  text-align: left;
+}
+
+.batch-table th {
+  position: sticky;
+  top: 0;
+  background: var(--card-bg);
+  color: var(--text-muted);
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--border);
+  z-index: 2;
+}
+
+.batch-table td {
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.batch-row {
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.batch-row:hover {
+  background: rgba(99, 102, 241, 0.04);
+}
+
+.batch-row.selected {
+  background: rgba(99, 102, 241, 0.1) !important;
+  border-left: 3px solid var(--accent);
+}
+
+/* Chi tiết từng ô */
+.batch-file-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 240px;
+}
+
+.batch-thumb-wrap {
+  width: 38px;
+  height: 38px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  background-color: var(--card-bg);
+  background-image: 
+    linear-gradient(45deg, rgba(0,0,0,0.1) 25%, transparent 25%), 
+    linear-gradient(-45deg, rgba(0,0,0,0.1) 25%, transparent 25%), 
+    linear-gradient(45deg, transparent 75%, rgba(0,0,0,0.1) 75%), 
+    linear-gradient(-45deg, transparent 75%, rgba(0,0,0,0.1) 75%);
+  background-size: 8px 8px;
+  background-position: 0 0, 0 4px, 4px -4px, -4px 0px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.batch-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.batch-file-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+}
+
+.batch-file-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.74rem;
+}
+
+.batch-file-sub {
+  font-size: 0.65rem;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.batch-file-sub.processing {
+  color: var(--accent-2);
+  font-weight: 600;
+}
+
+.batch-file-sub.done {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.batch-file-sub.waiting {
+  color: var(--text-muted);
+}
+
+.batch-res-cell {
+  font-variant-numeric: tabular-nums;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.batch-res-dim {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.batch-res-dpi {
+  color: var(--accent-2);
+  font-size: 0.64rem;
+  font-weight: 600;
+}
+
+.batch-size-cell {
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.72rem;
+  font-weight: 500;
+}
+
+.batch-pipeline-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.66rem;
+  font-weight: 600;
+  background: rgba(99, 102, 241, 0.1);
+  color: var(--accent-2);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  white-space: nowrap;
+}
+
+/* Huy hiệu trạng thái */
+.batch-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 14px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.batch-status-pill.done {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.batch-status-pill.processing {
+  background: rgba(99, 102, 241, 0.15);
+  color: var(--accent-2);
+  border: 1px solid rgba(99, 102, 241, 0.35);
+}
+
+.batch-status-pill.waiting {
+  background: rgba(100, 116, 139, 0.12);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
+.batch-status-pill.error {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+/* Các nút icon thao tác dòng */
+.batch-action-btns {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.batch-icon-btn {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px 7px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: all 0.15s ease;
+}
+
+.batch-icon-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--accent);
+  background: var(--surface);
+  transform: translateY(-1px);
+}
+
+.batch-icon-btn.remove:hover {
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+/* Chân bảng hàng đợi */
+.batch-queue-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 16px;
+  border-top: 1px solid var(--border);
+  background: var(--card-bg);
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}
+
+.batch-worker-setting {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.batch-worker-select {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  padding: 4px 9px;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-family: inherit;
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+}
+
+.batch-worker-select option {
+  background: var(--card-bg);
+  color: var(--text-primary);
+}
+
+.batch-auto-open-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.batch-auto-open-wrap input[type="checkbox"] {
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   4. RIGHT COLUMN: INSPECTOR PANEL
+══════════════════════════════════════════════════════════════════════════════ */
+.batch-inspector-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.batch-inspector-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--card-bg);
+  flex-shrink: 0;
+}
+
+.batch-inspector-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* Nút Zoom — Viền nút rõ ràng */
+.batch-inspector-zoom-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  font-size: 0.68rem;
+  font-weight: 600;
+  font-family: inherit;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: all 0.15s ease;
+}
+
+.batch-inspector-zoom-btn:hover {
+  background: var(--card-bg);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Khung xem trước ảnh */
+.batch-preview-viewport {
+  position: relative;
+  flex: 1;
+  min-height: 220px;
+  background-color: var(--card-bg);
+  background-image: 
+    linear-gradient(45deg, rgba(0,0,0,0.08) 25%, transparent 25%), 
+    linear-gradient(-45deg, rgba(0,0,0,0.08) 25%, transparent 25%), 
+    linear-gradient(45deg, transparent 75%, rgba(0,0,0,0.08) 75%), 
+    linear-gradient(-45deg, transparent 75%, rgba(0,0,0,0.08) 75%);
+  background-size: 14px 14px;
+  background-position: 0 0, 0 7px, 7px -7px, -7px 0px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 12px;
+}
+
+.batch-preview-img {
+  max-width: 90%;
+  max-height: 90%;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.45));
+  transition: transform 0.2s ease;
+}
+
+.batch-preview-img.zoomed {
+  max-width: none;
+  max-height: none;
+  transform: scale(1.6);
+  cursor: grab;
+}
+
+.batch-alpha-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: var(--surface);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: #10b981;
+  font-size: 0.64rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.batch-alpha-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.8);
+}
+
+.batch-dim-badge {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  font-size: 0.64rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.batch-compare-overlay {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: var(--accent);
+  color: #ffffff;
+  font-size: 0.62rem;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
+}
+
+/* Danh sách thuộc tính kỹ thuật in */
+.batch-inspector-details {
+  padding: 12px 14px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  background: var(--card-bg);
+  font-size: 0.7rem;
+  flex-shrink: 0;
+}
+
+.batch-prop-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.batch-prop-lbl {
+  color: var(--text-muted);
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.batch-prop-val {
+  color: var(--text-primary);
+  font-weight: 600;
+  text-align: right;
+  word-break: break-all;
+}
+
+.batch-prop-val.highlight-blue {
+  color: #0ea5e9;
+  font-weight: 700;
+}
+
+.batch-prop-val.highlight-purple {
+  color: var(--accent-2);
+  font-weight: 700;
+}
+
+.batch-dest-export-card {
+  margin-top: 4px;
+  padding-top: 7px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.batch-dest-export-lbl {
+  font-size: 0.64rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.batch-dest-export-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  gap: 6px;
+}
+
+.batch-dest-export-path {
+  font-family: monospace;
+  font-size: 0.64rem;
+  color: #38bdf8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   5. BOTTOM SYSTEM STATUS BAR
+══════════════════════════════════════════════════════════════════════════════ */
+.batch-bottom-status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 5px 14px;
+  font-size: 0.66rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.batch-status-chips-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.batch-status-chip-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 500;
+}
+
+.batch-chip-cyan   { color: #0ea5e9; font-weight: 600; }
+.batch-chip-purple { color: var(--accent-2); font-weight: 600; }
+.batch-chip-green  { color: #10b981; font-weight: 600; }
+
+.batch-status-hint-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.batch-space-hint {
+  color: var(--text-secondary);
+  background: var(--card-bg);
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  font-weight: 500;
+}
+
+.batch-engine-version {
+  color: var(--accent);
+  font-family: monospace;
+  font-weight: 700;
+}
+
+@keyframes spin-fast {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spin-fast {
+  animation: spin-fast 0.85s linear infinite;
+  display: inline-block;
+}

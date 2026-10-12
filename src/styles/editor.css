@@ -1,0 +1,534 @@
+/* ══════════════════════════════════════════════════════════════════════════════
+   EDITOR PAGE — Stylesheet (Chỉnh Sửa Ảnh Cơ Bản Pro)
+   Kế thừa hoàn toàn typography, font chữ và hệ biến CSS từ layout.css
+══════════════════════════════════════════════════════════════════════════════ */
+
+.editor-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 12px;
+  color: var(--text-primary);
+  font-family: var(--font-ui, 'Inter', system-ui, sans-serif);
+  user-select: none;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   1. TOP TOOLBAR
+══════════════════════════════════════════════════════════════════════════════ */
+.editor-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 14px;
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.editor-bar-left,
+.editor-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Nút bấm chuẩn có viền bao quanh rõ ràng */
+.editor-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  padding: 6px 13px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+
+.editor-btn:hover:not(:disabled) {
+  background: var(--surface);
+  border-color: var(--accent);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(99, 102, 241, 0.15);
+}
+
+.editor-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.editor-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.editor-btn-primary {
+  background: linear-gradient(135deg, var(--accent) 0%, #7c3aed 100%);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 3px 12px rgba(99, 102, 241, 0.35);
+}
+
+.editor-btn-primary:hover:not(:disabled) {
+  box-shadow: 0 5px 16px rgba(99, 102, 241, 0.5);
+  transform: translateY(-1px);
+}
+
+.editor-btn-danger {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.06);
+  border-color: rgba(239, 68, 68, 0.25);
+}
+
+.editor-btn-danger:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: #ef4444;
+  color: #f87171;
+}
+
+.editor-btn-active {
+  background: var(--accent);
+  color: #ffffff;
+  border-color: var(--accent);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.35);
+}
+
+.editor-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+  margin: 0 4px;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   2. MAIN WORKSPACE: SIDEBAR CONTROLS (LEFT) + CANVAS VIEWPORT (RIGHT)
+══════════════════════════════════════════════════════════════════════════════ */
+.editor-workspace {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 12px;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ── CỘT TRÁI: TOOLBOX & ACCORDION PANELS ── */
+.editor-toolbox {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+/* Category Tabs Header */
+.editor-tabs-bar {
+  display: flex;
+  align-items: center;
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--border);
+  padding: 6px;
+  gap: 4px;
+  overflow-x: auto;
+}
+
+.editor-tab-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.editor-tab-item:hover {
+  color: var(--text-primary);
+  background: rgba(99, 102, 241, 0.08);
+}
+
+.editor-tab-item.active {
+  background: var(--surface);
+  color: var(--accent);
+  border-color: var(--border);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  font-weight: 700;
+}
+
+/* Panel Body */
+.editor-panel-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.editor-section-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.editor-section-title {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.editor-section-title-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Range Slider Item */
+.editor-slider-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.editor-slider-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.7rem;
+}
+
+.editor-slider-lbl {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.editor-slider-val {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--accent-2);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.68rem;
+  min-width: 38px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.editor-range-input {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 5px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.15);
+  border: 1px solid var(--border);
+  outline: none;
+  cursor: pointer;
+}
+
+.editor-range-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 6px rgba(99, 102, 241, 0.6);
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.editor-range-input::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+/* Toggle Switch Row */
+.editor-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0;
+}
+
+.editor-toggle-lbl {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.editor-switch {
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 20px;
+}
+
+.editor-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.editor-switch-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  transition: 0.2s;
+}
+
+.editor-switch-slider:before {
+  position: absolute;
+  content: "";
+  height: 14px;
+  width: 14px;
+  left: 2px;
+  bottom: 2px;
+  background-color: var(--text-muted);
+  border-radius: 50%;
+  transition: 0.2s;
+}
+
+.editor-switch input:checked + .editor-switch-slider {
+  background-color: var(--accent);
+  border-color: var(--accent);
+}
+
+.editor-switch input:checked + .editor-switch-slider:before {
+  transform: translateX(16px);
+  background-color: #ffffff;
+}
+
+/* Aspect Ratio Buttons Grid */
+.editor-aspect-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.editor-aspect-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  padding: 6px 4px;
+  border-radius: 6px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s ease;
+}
+
+.editor-aspect-btn:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.editor-aspect-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #ffffff;
+  font-weight: 700;
+}
+
+/* Resize Inputs Grid */
+.editor-input-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.editor-input-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.editor-input-lbl {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.editor-num-input {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-family: inherit;
+  font-weight: 600;
+  outline: none;
+}
+
+.editor-num-input:focus {
+  border-color: var(--accent);
+}
+
+/* Quick Buttons Group (Rotate / Flip) */
+.editor-btn-group {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+/* ── CỘT PHẢI: INTERACTIVE CANVAS VIEWPORT ── */
+.editor-canvas-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  position: relative;
+}
+
+.editor-viewport-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--card-bg);
+  flex-shrink: 0;
+  font-size: 0.72rem;
+}
+
+.editor-image-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-secondary);
+}
+
+.editor-meta-pill {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--accent-2);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Canvas Viewport Area */
+.editor-viewport-area {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--card-bg);
+  background-image: 
+    linear-gradient(45deg, rgba(0,0,0,0.08) 25%, transparent 25%), 
+    linear-gradient(-45deg, rgba(0,0,0,0.08) 25%, transparent 25%), 
+    linear-gradient(45deg, transparent 75%, rgba(0,0,0,0.08) 75%), 
+    linear-gradient(-45deg, transparent 75%, rgba(0,0,0,0.08) 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+  padding: 20px;
+}
+
+.editor-canvas-element {
+  max-width: 95%;
+  max-height: 95%;
+  object-fit: contain;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+  transition: transform 0.15s ease;
+}
+
+/* Before / After Compare Overlay Badge */
+.editor-compare-badge {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: var(--accent);
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 6px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  box-shadow: 0 3px 10px rgba(99, 102, 241, 0.5);
+  animation: pulse-dot 1.5s infinite;
+}
+
+/* Empty Dropzone State */
+.editor-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 40px;
+  text-align: center;
+}
+
+.editor-empty-icon {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+}
+
+.editor-empty-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.editor-empty-sub {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  max-width: 320px;
+  line-height: 1.5;
+}
+
+.editor-sample-btns {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}

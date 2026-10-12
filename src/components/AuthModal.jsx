@@ -107,20 +107,20 @@ function CaptchaBox({ captcha, onReload, loading }) {
 
 export default function AuthModal({ onLoginSuccess }) {
   // Modes: "login" | "register" | "verify_otp" | "forgot_password"
-  const [mode, setMode]             = useState("login");
-  const [email, setEmail]           = useState("");
-  const [password, setPassword]     = useState("");
-  const [captchaInput, setCaptcha]  = useState("");
-  const [otpCode, setOtpCode]       = useState("");
+  const [mode, setMode] = useState("login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [captchaInput, setCaptcha] = useState("");
+  const [otpCode, setOtpCode] = useState("");
 
   const [captchaData, setCaptchaData] = useState(null);
   const [loadingCaptcha, setLoadingCaptcha] = useState(false);
 
-  const [errorMsg, setErrorMsg]     = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
-  const [loading, setLoading]       = useState(false);
-  const [showPass, setShowPass]     = useState(false);
-  const [animate, setAnimate]       = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [showPass, setShowPass] = useState(false);
+  const [animate, setAnimate] = useState(false);
 
   useEffect(() => {
     setAnimate(true);
@@ -765,6 +765,7 @@ export default function AuthModal({ onLoginSuccess }) {
                         letterSpacing: "3px",
                         fontWeight: 700,
                         textAlign: "center",
+                        width: "129px"
                       }}
                     />
                   </div>

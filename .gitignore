@@ -6,7 +6,11 @@
 .env
 .env.*
 !.env.example
-*.local
+!.env.local.example
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 *.pem
 *.key
 *.p12
@@ -30,10 +34,13 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# --- Executables & Installers ---
+# --- Executables, Installers & Dev Scripts ---
 *.exe
 *.msi
 rustup-init.exe
+# Script khởi động nội bộ (chứa path tuyệt đối, không nên commit)
+start_dev.bat
+start_silent.vbs
 
 # --- Logs ---
 logs/
@@ -61,3 +68,9 @@ desktop.ini
 
 # --- Docs / Temp Notes ---
 md/
+
+# --- Python Engine Outputs ---
+python_engine/output/
+python_engine/temp/
+python_engine/*.db
+python_engine/*.sqlite

@@ -2,11 +2,15 @@ import { useState, useEffect } from "react";
 import MainLayout from "./layouts/MainLayout";
 import DashboardPage from "./pages/DashboardPage";
 import EditorPage from "./pages/EditorPage";
+import BatchProcessPage from "./pages/BatchProcessPage";
 import SettingsPage from "./pages/SettingsPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import AuthModal from "./components/AuthModal";
 import { authService } from "./services/authService";
 import { initSettingsFromStorage } from "./hooks/useSettings";
+
+import DownloadToastContainer from "./components/DownloadToast";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 // ── View → Component map ──────────────────────────────────────────────────────
 function resolveView(view, navigate, user, onLogout) {
@@ -31,6 +35,9 @@ function resolveView(view, navigate, user, onLogout) {
   switch (view) {
     case "editor":
       return <EditorPage />;
+    case "queue":
+    case "batch":
+      return <BatchProcessPage onNavigate={navigate} user={user} />;
     case "settings":
       return <SettingsPage user={user} onLogout={onLogout} />;
     case "dashboard":
@@ -82,16 +89,21 @@ function App() {
     return <AuthModal onLoginSuccess={handleLoginSuccess} />;
   }
 
-  // Đã đăng nhập → hiện toàn bộ app
+  // Đã đăng nhập → hiện toàn bộ app + DownloadToastContainer toàn cục
   return (
-    <MainLayout
-      currentView={currentView}
-      onNavigate={handleNavigate}
-      user={user}
-      onLogout={handleLogout}
-    >
-      {resolveView(currentView, handleNavigate, user, handleLogout)}
-    </MainLayout>
+    <>
+      <MainLayout
+        currentView={currentView}
+        onNavigate={handleNavigate}
+        user={user}
+        onLogout={handleLogout}
+      >
+        <ErrorBoundary onReset={() => setCurrentView("dashboard")}>
+          {resolveView(currentView, handleNavigate, user, handleLogout)}
+        </ErrorBoundary>
+      </MainLayout>
+      <DownloadToastContainer />
+    </>
   );
 }
 

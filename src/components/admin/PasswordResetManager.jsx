@@ -15,10 +15,11 @@ export default function PasswordResetManager() {
   const [loading, setLoading]       = useState(false);
   const [actionLoading, setAction]  = useState(null); // id đang xử lý
   const [statusFilter, setStatus]   = useState("pending");
-  const [error, setError]           = useState(null);
-  const [successMsg, setSuccessMsg] = useState("");
-  const [rejectModal, setReject]    = useState(null); // { id, email }
-  const [rejectNote, setRejectNote] = useState("");
+  const [error, setError]               = useState(null);
+  const [successMsg, setSuccessMsg]     = useState("");
+  const [approveModal, setApproveModal] = useState(null); // { id, email }
+  const [rejectModal, setReject]        = useState(null); // { id, email }
+  const [rejectNote, setRejectNote]     = useState("");
 
   const fetchResets = useCallback(async () => {
     setLoading(true);
@@ -38,19 +39,19 @@ export default function PasswordResetManager() {
     fetchResets();
   }, [fetchResets]);
 
-  // Phê duyệt yêu cầu
-  const handleApprove = async (id, email) => {
-    if (!window.confirm(`Xác nhận phê duyệt và sinh mật khẩu mới gửi về Gmail cho: ${email}?`)) {
-      return;
-    }
+  // Phê duyệt yêu cầu qua Modal tùy biến
+  const handleApproveConfirm = async () => {
+    if (!approveModal) return;
+    const { id, email } = approveModal;
     setAction(id);
     setError(null);
     setSuccessMsg("");
     try {
       const res = await adminService.approvePasswordReset(id);
-      setSuccessMsg(res.message || `Đã gửi mật khẩu mới tới ${email}!`);
+      setSuccessMsg(res.message || `Đã gửi mật khẩu mới tới Gmail: ${email}!`);
+      setApproveModal(null);
       fetchResets();
-      setTimeout(() => setSuccessMsg(""), 4000);
+      setTimeout(() => setSuccessMsg(""), 4500);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -257,7 +258,7 @@ export default function PasswordResetManager() {
                       {isPending ? (
                         <div style={{ display: "inline-flex", gap: 6 }}>
                           <button
-                            onClick={() => handleApprove(r.id, r.user_email)}
+                            onClick={() => setApproveModal({ id: r.id, email: r.user_email })}
                             disabled={isActionLoading}
                             style={{
                               display: "inline-flex", alignItems: "center", gap: 5,
@@ -269,7 +270,7 @@ export default function PasswordResetManager() {
                             }}
                           >
                             <Send size={11} />
-                            <span>{isActionLoading ? "Đang xử lý..." : "Duyệt & Gửi Gmail"}</span>
+                            <span>{isActionLoading && actionLoading === r.id ? "Đang xử lý..." : "Duyệt & Gửi Gmail"}</span>
                           </button>
 
                           <button
@@ -300,6 +301,101 @@ export default function PasswordResetManager() {
           </tbody>
         </table>
       </div>
+
+      {/* ── Modal xác nhận Phê duyệt & Gửi Gmail ── */}
+      {approveModal && (
+        <div
+          className="admin-modal-overlay"
+          onClick={(e) => e.target === e.currentTarget && !actionLoading && setApproveModal(null)}
+        >
+          <div className="admin-modal" style={{ maxWidth: 440, borderRadius: 14 }}>
+            <div className="admin-modal__header" style={{ borderBottom: "1px solid var(--border)", padding: "16px 20px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{
+                  width: 36, height: 36, borderRadius: 10,
+                  background: "linear-gradient(135deg, rgba(16,185,129,0.2) 0%, rgba(5,150,105,0.1) 100%)",
+                  border: "1px solid rgba(16,185,129,0.35)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  flexShrink: 0
+                }}>
+                  <KeyRound size={18} color="#10b981" />
+                </div>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: "0.95rem", color: "var(--text-primary)" }}>
+                    Phê Duyệt Cấp Lại Mật Khẩu
+                  </div>
+                  <div style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>
+                    Sinh mật khẩu ngẫu nhiên & gửi qua Gmail
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ padding: "18px 20px" }}>
+              <div style={{
+                background: "rgba(16,185,129,0.06)",
+                border: "1px solid rgba(16,185,129,0.25)",
+                borderRadius: 10,
+                padding: "12px 14px",
+                marginBottom: 14
+              }}>
+                <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginBottom: 4, fontWeight: 500 }}>
+                  Hộp thư người nhận mật khẩu mới:
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <Mail size={16} color="#10b981" />
+                  <strong style={{ fontSize: "0.92rem", color: "var(--text-primary)", letterSpacing: "0.2px" }}>
+                    {approveModal.email}
+                  </strong>
+                </div>
+              </div>
+
+              <p style={{ fontSize: "0.82rem", color: "var(--text-secondary)", lineHeight: 1.55, margin: "0 0 18px" }}>
+                Hệ thống sẽ tự động <strong>tạo một mật khẩu mới ngẫu nhiên bảo mật cao</strong> và gửi trực tiếp qua Google SMTP đến hộp thư của người dùng. Mật khẩu cũ sẽ bị vô hiệu hóa ngay sau khi duyệt.
+              </p>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+                <button
+                  type="button"
+                  onClick={() => setApproveModal(null)}
+                  disabled={actionLoading === approveModal.id}
+                  className="admin-btn-action"
+                  style={{ padding: "8px 16px", borderRadius: 8, fontSize: "0.8rem", cursor: "pointer" }}
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  type="button"
+                  onClick={handleApproveConfirm}
+                  disabled={actionLoading === approveModal.id}
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 6,
+                    padding: "8px 18px", borderRadius: 8,
+                    background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                    border: "none", color: "#fff",
+                    fontWeight: 600, fontSize: "0.8rem",
+                    cursor: actionLoading === approveModal.id ? "not-allowed" : "pointer",
+                    boxShadow: "0 2px 10px rgba(16,185,129,0.35)",
+                    opacity: actionLoading === approveModal.id ? 0.75 : 1
+                  }}
+                >
+                  {actionLoading === approveModal.id ? (
+                    <>
+                      <RefreshCw size={13} className="spin" />
+                      <span>Đang gửi Gmail...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send size={13} />
+                      <span>Xác nhận Duyệt & Gửi</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Modal từ chối ── */}
       {rejectModal && (

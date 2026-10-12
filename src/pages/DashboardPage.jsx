@@ -252,7 +252,7 @@ function Launchpad({ onNavigate }) {
   );
 }
 
-function PipelineQueue() {
+function PipelineQueue({ onNavigate }) {
   return (
     <div className="pipeline">
       <div className="pipeline__header">
@@ -309,7 +309,12 @@ function PipelineQueue() {
         </tbody>
       </table>
 
-      <div className="pipeline__footer" id="pipeline-view-all">
+      <div
+        className="pipeline__footer"
+        id="pipeline-view-all"
+        onClick={() => onNavigate && onNavigate("queue")}
+        style={{ cursor: "pointer" }}
+      >
         Xem toàn bộ hàng đợi →
       </div>
     </div>
@@ -388,7 +393,11 @@ function DashboardPage({ onNavigate }) {
             <Upload size={14} />
             Import tệp mô
           </button>
-          <button id="btn-batch-dtf" className="btn-secondary">
+          <button
+            id="btn-batch-dtf"
+            className="btn-secondary"
+            onClick={() => onNavigate("queue")}
+          >
             <Zap size={14} />
             Bắt đầu Hàng đợi Batch DTF
           </button>
@@ -407,7 +416,7 @@ function DashboardPage({ onNavigate }) {
 
       {/* Bottom: Pipeline + Device */}
       <div className="dashboard-bottom">
-        <PipelineQueue />
+        <PipelineQueue onNavigate={onNavigate} />
         <DevicePanel />
       </div>
 

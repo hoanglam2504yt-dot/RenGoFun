@@ -1,0 +1,587 @@
+/* ══════════════════════════════════════════════════════════════════════════════
+   ADMIN DASHBOARD — Styles (Dark Pro Ecosystem)
+   Kế thừa hoàn toàn Design Tokens từ layout.css & dashboard.css
+══════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Container & Layout ── */
+.admin-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  font-family: var(--font-ui, 'Inter', system-ui, -apple-system, sans-serif);
+  color: var(--text-primary, #e8eaf6);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* ── Admin Header ── */
+.admin-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: var(--card-bg, #181826);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.07));
+  border-radius: 14px;
+  position: relative;
+  overflow: hidden;
+}
+
+.admin-header::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent, #6366f1), #a855f7, #ec4899);
+}
+
+.admin-header__brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-header__icon-box {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--accent, #6366f1) 0%, #8b5cf6 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+  flex-shrink: 0;
+}
+
+.admin-header__title {
+  font-size: 1.05rem;
+  font-weight: var(--fw-strong, 660);
+  color: var(--text-primary, #e8eaf6);
+  letter-spacing: -0.01em;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-header__sub {
+  font-size: var(--fs-xs, 0.625rem);
+  color: var(--text-muted, #6b7280);
+  margin-top: 2px;
+}
+
+.admin-header__meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ── Status Pills & Badges ── */
+.admin-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: var(--fs-xs, 0.625rem);
+  font-weight: var(--fw-label, 560);
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-badge--live {
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #34d399;
+}
+
+.admin-badge--offline {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #f87171;
+}
+
+.admin-badge--checking {
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: #fbbf24;
+}
+
+.admin-badge--role {
+  background: rgba(99, 102, 241, 0.15);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  color: var(--accent-2, #818cf8);
+}
+
+.admin-badge--free {
+  background: rgba(156, 163, 175, 0.12);
+  border: 1px solid rgba(156, 163, 175, 0.25);
+  color: #9ca3af;
+}
+
+.admin-badge--pro {
+  background: rgba(6, 182, 212, 0.15);
+  border: 1px solid rgba(6, 182, 212, 0.3);
+  color: #22d3ee;
+}
+
+.admin-badge--enterprise {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: #fbbf24;
+}
+
+/* ── Navigation Tabs ── */
+.admin-tabs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface, #12121c);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.07));
+  border-radius: 12px;
+  padding: 5px;
+  overflow-x: auto;
+}
+
+.admin-tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary, #b0b4d0);
+  font-family: inherit;
+  font-size: var(--fs-sm, 0.6875rem);
+  font-weight: var(--fw-ui, 420);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.admin-tab-btn:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-primary, #e8eaf6);
+}
+
+.admin-tab-btn.active {
+  background: var(--card-bg, #181826);
+  color: #ffffff;
+  font-weight: var(--fw-label, 560);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.07));
+}
+
+.admin-tab-btn.active svg {
+  color: var(--accent-2, #818cf8);
+}
+
+/* ── Metric Cards Grid ── */
+.admin-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+@media (max-width: 1024px) {
+  .admin-metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.admin-metric-card {
+  background: var(--card-bg, #181826);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.07));
+  border-radius: 14px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+
+.admin-metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+.admin-metric-card__accent {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 3px;
+}
+
+.admin-metric-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.admin-metric-card__label {
+  font-size: var(--fs-xs, 0.625rem);
+  font-weight: var(--fw-label, 560);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted, #6b7280);
+}
+
+.admin-metric-card__icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-metric-card__value {
+  font-size: 1.85rem;
+  font-weight: var(--fw-strong, 660);
+  color: var(--text-primary, #e8eaf6);
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  margin-top: 2px;
+}
+
+.admin-metric-card__sub {
+  font-size: var(--fs-xs, 0.625rem);
+  font-weight: var(--fw-normal, 400);
+  color: var(--text-secondary, #b0b4d0);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ── Panel / Section Card ── */
+.admin-card {
+  background: var(--card-bg, #181826);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.07));
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.admin-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.07));
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.admin-card__title {
+  font-size: var(--fs-md, 0.8125rem);
+  font-weight: var(--fw-label, 560);
+  color: var(--text-primary, #e8eaf6);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-card__sub {
+  font-size: var(--fs-xs, 0.625rem);
+  color: var(--text-muted, #6b7280);
+  margin-top: 2px;
+}
+
+/* ── Form Controls (Inputs, Selects, Buttons) ── */
+.admin-input {
+  background: var(--surface, #12121c);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.07));
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: var(--text-primary, #e8eaf6);
+  font-family: inherit;
+  font-size: var(--fs-sm, 0.6875rem);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  box-sizing: border-box;
+}
+
+.admin-input:focus {
+  border-color: var(--accent, #6366f1);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+.admin-input::placeholder {
+  color: var(--text-muted, #6b7280);
+}
+
+.admin-select {
+  background: var(--surface, #12121c);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.07));
+  border-radius: 8px;
+  padding: 7px 12px;
+  color: var(--text-primary, #e8eaf6);
+  font-family: inherit;
+  font-size: var(--fs-sm, 0.6875rem);
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.admin-select:focus {
+  border-color: var(--accent, #6366f1);
+}
+
+.admin-select option {
+  background: #181826;
+  color: #e8eaf6;
+}
+
+/* ── Table Styling ── */
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.admin-table th {
+  text-align: left;
+  font-size: var(--fs-xs, 0.625rem);
+  font-weight: var(--fw-normal, 400);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted, #6b7280);
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.07));
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.admin-table td {
+  padding: 11px 16px;
+  font-size: var(--fs-sm, 0.6875rem);
+  color: var(--text-primary, #e8eaf6);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  vertical-align: middle;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-table tr:hover td {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* ── Pagination ── */
+.admin-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  border-top: 1px solid var(--border, rgba(255, 255, 255, 0.07));
+  font-size: var(--fs-xs, 0.625rem);
+  color: var(--text-muted, #6b7280);
+}
+
+.admin-pagination__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.07));
+  background: var(--surface, #12121c);
+  color: var(--text-secondary, #b0b4d0);
+  font-family: inherit;
+  font-size: var(--fs-xs, 0.625rem);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.admin-pagination__btn:hover:not(:disabled) {
+  border-color: var(--accent-2, #818cf8);
+  color: var(--text-primary, #e8eaf6);
+}
+
+.admin-pagination__btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ── Toggle Switch (iOS / Settings Style) ── */
+.admin-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.admin-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.admin-switch__slider {
+  position: absolute;
+  inset: 0;
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.07));
+  border-radius: 24px;
+  transition: 0.25s ease;
+}
+
+.admin-switch__slider::before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 2px;
+  bottom: 2px;
+  background-color: #ffffff;
+  border-radius: 50%;
+  transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.admin-switch input:checked + .admin-switch__slider {
+  background: linear-gradient(135deg, var(--accent, #6366f1) 0%, #8b5cf6 100%);
+  border-color: var(--accent, #6366f1);
+}
+
+.admin-switch input:checked + .admin-switch__slider::before {
+  transform: translateX(20px);
+}
+
+/* ── Buttons (Custom Admin Variations) ── */
+.admin-btn-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.07));
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-secondary, #b0b4d0);
+  font-family: inherit;
+  font-size: var(--fs-xs, 0.625rem);
+  font-weight: var(--fw-ui, 420);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.admin-btn-action:hover {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.4);
+  color: #fff;
+}
+
+.admin-btn-action--danger {
+  color: #f87171;
+}
+
+.admin-btn-action--danger:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+}
+
+/* ── Modal (Glassmorphism & Project Tokens) ── */
+.admin-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(7, 7, 12, 0.75);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.admin-modal {
+  background: var(--card-bg, #181826);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  width: 480px;
+  max-width: 100%;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: adminModalEnter 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes adminModalEnter {
+  from { opacity: 0; transform: scale(0.96) translateY(8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.admin-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.07));
+}
+
+.admin-modal__body {
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.admin-modal__footer {
+  padding: 14px 22px;
+  border-top: 1px solid var(--border, rgba(255, 255, 255, 0.07));
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  background: rgba(0, 0, 0, 0.15);
+}
+
+/* ── Option Selector Card (Plan choices) ── */
+.admin-option-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.07));
+  background: var(--surface, #12121c);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.admin-option-card:hover {
+  border-color: rgba(99, 102, 241, 0.4);
+  background: rgba(99, 102, 241, 0.04);
+}
+
+.admin-option-card.selected {
+  border-color: var(--accent, #6366f1);
+  background: rgba(99, 102, 241, 0.12);
+  box-shadow: 0 0 12px rgba(99, 102, 241, 0.2);
+}
+
+.admin-option-card__radio {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--border, rgba(255, 255, 255, 0.2));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.admin-option-card.selected .admin-option-card__radio {
+  border-color: var(--accent, #6366f1);
+}
+
+.admin-option-card.selected .admin-option-card__radio::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent, #6366f1);
+}

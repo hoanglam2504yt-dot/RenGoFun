@@ -1,12 +1,20 @@
 /**
  * SystemSettings.jsx — Cấu hình hệ thống từ xa (Remote System Settings)
+ * Đồng bộ với admin.css và chuẩn UI thiết kế của dự án
  */
 import { useState, useEffect } from "react";
-import { Settings, Save, Loader2, AlertTriangle, CheckCircle, Radio } from "lucide-react";
+import {
+  Settings, Save, Loader2, AlertTriangle,
+  CheckCircle, Radio, Wrench, Megaphone, Smartphone
+} from "lucide-react";
 import { adminService } from "../../services/adminService";
 
 export default function SystemSettings() {
-  const [config, setConfig] = useState({ min_version: "", banner_msg: "", maintenance_mode: false });
+  const [config, setConfig] = useState({
+    min_version: "",
+    banner_msg: "",
+    maintenance_mode: false,
+  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving]   = useState(false);
   const [feedback, setFeedback] = useState(null);
@@ -22,7 +30,33 @@ export default function SystemSettings() {
       .finally(() => setLoading(false));
   }, []);
 
-  const handleSave = async () => {
+  const handleToggleMaintenance = async (newVal) => {
+    setConfig(c => ({ ...c, maintenance_mode: newVal }));
+    setSaving(true);
+    setFeedback(null);
+    try {
+      await adminService.broadcastSystem({
+        minVersion: config.min_version || undefined,
+        bannerMsg: config.banner_msg || undefined,
+        maintenanceMode: newVal,
+      });
+      setFeedback({
+        type: "success",
+        msg: newVal
+          ? "Đã BẬT Chế độ bảo trì hệ thống! Người dùng thông thường sẽ bị chặn đăng nhập."
+          : "Đã TẮT Chế độ bảo trì! Hệ thống đã mở lại bình thường cho toàn bộ người dùng."
+      });
+    } catch (err) {
+      // Revert state if failed
+      setConfig(c => ({ ...c, maintenance_mode: !newVal }));
+      setFeedback({ type: "error", msg: `Lỗi khi đổi trạng thái bảo trì: ${err.message}` });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
     setSaving(true);
     setFeedback(null);
     try {
@@ -31,7 +65,7 @@ export default function SystemSettings() {
         bannerMsg: config.banner_msg || undefined,
         maintenanceMode: config.maintenance_mode,
       });
-      setFeedback({ type: "success", msg: "Đã cập nhật cấu hình hệ thống thành công!" });
+      setFeedback({ type: "success", msg: "Đã lưu và phát cấu hình hệ thống thành công!" });
     } catch (err) {
       setFeedback({ type: "error", msg: err.message });
     } finally {
@@ -39,140 +73,193 @@ export default function SystemSettings() {
     }
   };
 
-  const inputStyle = {
-    width: "100%", padding: "9px 12px",
-    background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)",
-    borderRadius: 9, color: "#fff", fontSize: "0.77rem", boxSizing: "border-box",
-  };
-  const labelStyle = { fontSize: "0.7rem", fontWeight: 700, color: "#94a3b8", display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" };
-
   if (loading) {
     return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 40, gap: 10, color: "var(--text-secondary)" }}>
-        <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} />
-        <span style={{ fontSize: "0.75rem" }}>Đang tải cấu hình...</span>
+      <div className="admin-card" style={{ padding: 40, textAlign: "center", color: "var(--text-muted)" }}>
+        <Loader2 size={18} style={{ animation: "spin 1s linear infinite", display: "inline-block", marginRight: 8 }} />
+        <span>Đang nạp cấu hình hệ thống từ đám mây...</span>
       </div>
     );
   }
 
   return (
-    <div style={{ maxWidth: 600 }}>
-      <div style={{
-        background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)",
-        borderRadius: 14, padding: "24px 28px",
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 24 }}>
-          <div style={{
-            width: 36, height: 36, borderRadius: 9,
-            background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.25)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}>
-            <Settings size={16} color="#6366f1" />
-          </div>
+    <div style={{ maxWidth: 680 }}>
+      <form onSubmit={handleSave} className="admin-card">
+
+        {/* ── Header ── */}
+        <div className="admin-card__header">
           <div>
-            <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#fff" }}>Cấu hình từ xa</div>
-            <div style={{ fontSize: "0.68rem", color: "var(--text-secondary)" }}>Áp dụng ngay cho tất cả client kết nối</div>
-          </div>
-        </div>
-
-        {/* ── Phiên bản tối thiểu ── */}
-        <div style={{ marginBottom: 20 }}>
-          <label style={labelStyle}>Phiên bản ứng dụng tối thiểu (Min App Version)</label>
-          <input
-            value={config.min_version}
-            onChange={e => setConfig(c => ({ ...c, min_version: e.target.value }))}
-            placeholder="vd: 1.0.2"
-            style={inputStyle}
-          />
-          <div style={{ fontSize: "0.65rem", color: "var(--text-secondary)", marginTop: 5 }}>
-            Client chạy phiên bản thấp hơn sẽ nhận thông báo yêu cầu cập nhật.
-          </div>
-        </div>
-
-        {/* ── Banner thông báo ── */}
-        <div style={{ marginBottom: 20 }}>
-          <label style={labelStyle}>Banner thông báo hệ thống</label>
-          <textarea
-            value={config.banner_msg}
-            onChange={e => setConfig(c => ({ ...c, banner_msg: e.target.value }))}
-            placeholder="Nhập thông báo hiển thị cho tất cả người dùng (để trống nếu không có)..."
-            rows={3}
-            style={{ ...inputStyle, resize: "vertical", lineHeight: 1.5 }}
-          />
-        </div>
-
-        {/* ── Chế độ bảo trì ── */}
-        <div style={{ marginBottom: 24 }}>
-          <label style={labelStyle}>Chế độ bảo trì (Maintenance Mode)</label>
-          <div
-            onClick={() => setConfig(c => ({ ...c, maintenance_mode: !c.maintenance_mode }))}
-            style={{
-              display: "flex", alignItems: "center", gap: 12,
-              padding: "12px 16px", borderRadius: 10, cursor: "pointer",
-              background: config.maintenance_mode ? "rgba(245,158,11,0.1)" : "rgba(255,255,255,0.03)",
-              border: `1px solid ${config.maintenance_mode ? "rgba(245,158,11,0.3)" : "rgba(255,255,255,0.08)"}`,
-              transition: "all 0.2s",
-            }}
-          >
-            <Radio size={16} color={config.maintenance_mode ? "#f59e0b" : "#94a3b8"} />
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: "0.75rem", fontWeight: 600, color: config.maintenance_mode ? "#f59e0b" : "#e2e8f0" }}>
-                {config.maintenance_mode ? "🛠️ Đang bảo trì" : "Bảo trì đã tắt"}
-              </div>
-              <div style={{ fontSize: "0.65rem", color: "var(--text-secondary)" }}>
-                {config.maintenance_mode ? "App Desktop sẽ hiện thông báo hoãn đồng bộ." : "Nhấn để bật chế độ bảo trì."}
-              </div>
+            <div className="admin-card__title">
+              <Settings size={16} color="var(--accent-2, #818cf8)" />
+              <span>Cấu Hình Tham Số & Điều Khiển Từ Xa</span>
             </div>
-            {/* Toggle */}
+            <div className="admin-card__sub">
+              Áp dụng tức thì cho mọi máy trạm desktop RenGoFun đang chạy
+            </div>
+          </div>
+        </div>
+
+        <div style={{ padding: 22, display: "flex", flexDirection: "column", gap: 20 }}>
+
+          {/* Feedback alert */}
+          {feedback && (
             <div style={{
-              width: 44, height: 24, borderRadius: 12,
-              background: config.maintenance_mode ? "#f59e0b" : "rgba(255,255,255,0.15)",
-              position: "relative", transition: "background 0.2s",
+              padding: "10px 14px",
+              borderRadius: 8,
+              background: feedback.type === "success" ? "rgba(16,185,129,0.12)" : "rgba(239,68,68,0.12)",
+              border: `1px solid ${feedback.type === "success" ? "rgba(16,185,129,0.3)" : "rgba(239,68,68,0.3)"}`,
+              color: feedback.type === "success" ? "#34d399" : "#f87171",
+              fontSize: "var(--fs-xs, 0.625rem)",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
             }}>
+              {feedback.type === "success" ? <CheckCircle size={14} /> : <AlertTriangle size={14} />}
+              <span>{feedback.msg}</span>
+            </div>
+          )}
+
+          {/* ── 1. Chế độ Bảo trì (Maintenance Mode) ── */}
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "16px 18px",
+            background: config.maintenance_mode ? "rgba(239, 68, 68, 0.08)" : "var(--surface)",
+            border: `1px solid ${config.maintenance_mode ? "rgba(239, 68, 68, 0.3)" : "var(--border)"}`,
+            borderRadius: 12,
+            transition: "all 0.2s ease",
+          }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
               <div style={{
-                width: 18, height: 18, borderRadius: "50%", background: "#fff",
-                position: "absolute", top: 3,
-                left: config.maintenance_mode ? 23 : 3,
-                transition: "left 0.2s",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
-              }} />
+                width: 36,
+                height: 36,
+                borderRadius: 8,
+                background: config.maintenance_mode ? "rgba(239,68,68,0.15)" : "rgba(255,255,255,0.05)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: config.maintenance_mode ? "#f87171" : "var(--text-muted)",
+              }}>
+                <Wrench size={18} />
+              </div>
+              <div>
+                <div style={{
+                  fontSize: "var(--fs-sm, 0.6875rem)",
+                  fontWeight: "var(--fw-label, 560)",
+                  color: config.maintenance_mode ? "#f87171" : "var(--text-primary)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                }}>
+                  <span>Chế Độ Bảo Trì Hệ Thống</span>
+                  {config.maintenance_mode && (
+                    <span className="admin-badge admin-badge--offline" style={{ padding: "1px 6px" }}>
+                      Đang bật
+                    </span>
+                  )}
+                </div>
+                <div style={{ fontSize: "var(--fs-xs, 0.625rem)", color: "var(--text-muted)", marginTop: 3 }}>
+                  Khi bật, người dùng thông thường sẽ không thể đăng nhập hoặc đồng bộ
+                </div>
+              </div>
+            </div>
+
+            {/* iOS Style Toggle Switch with Auto-Save */}
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              {saving && <Loader2 size={14} style={{ animation: "spin 1s linear infinite", color: "var(--accent-2)" }} />}
+              <label className="admin-switch" title="Gạt để Bật / Tắt chế độ bảo trì">
+                <input
+                  type="checkbox"
+                  disabled={saving}
+                  checked={config.maintenance_mode}
+                  onChange={e => handleToggleMaintenance(e.target.checked)}
+                />
+                <span className="admin-switch__slider" />
+              </label>
             </div>
           </div>
+
+          {/* ── 2. Phiên bản tối thiểu (Min Version) ── */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <label style={{
+              fontSize: "var(--fs-xs, 0.625rem)",
+              fontWeight: "var(--fw-label, 560)",
+              textTransform: "uppercase",
+              letterSpacing: "0.06em",
+              color: "var(--text-secondary)",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+            }}>
+              <Smartphone size={13} />
+              <span>Phiên Bản Ứng Dụng Tối Thiểu (Min Client Version)</span>
+            </label>
+            <input
+              type="text"
+              value={config.min_version}
+              onChange={e => setConfig(c => ({ ...c, min_version: e.target.value }))}
+              placeholder="Ví dụ: 2.0.1"
+              className="admin-input"
+            />
+            <span style={{ fontSize: "var(--fs-xs, 0.625rem)", color: "var(--text-muted)" }}>
+              Các máy trạm đang chạy phiên bản nhỏ hơn giá trị này sẽ tự động hiển thị popup yêu cầu cập nhật.
+            </span>
+          </div>
+
+          {/* ── 3. Banner thông báo khẩn cấp ── */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <label style={{
+              fontSize: "var(--fs-xs, 0.625rem)",
+              fontWeight: "var(--fw-label, 560)",
+              textTransform: "uppercase",
+              letterSpacing: "0.06em",
+              color: "var(--text-secondary)",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+            }}>
+              <Megaphone size={13} />
+              <span>Thông Báo Khẩn Cấp Hệ Thống (Broadcast Banner)</span>
+            </label>
+            <textarea
+              value={config.banner_msg}
+              onChange={e => setConfig(c => ({ ...c, banner_msg: e.target.value }))}
+              placeholder="Nhập nội dung cảnh báo hiển thị trên đầu ứng dụng của toàn bộ người dùng..."
+              rows={3}
+              className="admin-input"
+              style={{ resize: "vertical", lineHeight: 1.5 }}
+            />
+            <span style={{ fontSize: "var(--fs-xs, 0.625rem)", color: "var(--text-muted)" }}>
+              Để trống nếu không có thông báo đặc biệt nào.
+            </span>
+          </div>
+
+          {/* ── Submit Action ── */}
+          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+            <button
+              type="submit"
+              disabled={saving}
+              className="btn-primary"
+              style={{ padding: "8px 18px" }}
+            >
+              {saving ? (
+                <>
+                  <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} />
+                  <span>Đang lưu...</span>
+                </>
+              ) : (
+                <>
+                  <Save size={13} />
+                  <span>Lưu Cấu Hình Hệ Thống</span>
+                </>
+              )}
+            </button>
+          </div>
+
         </div>
 
-        {/* Save button */}
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          style={{
-            width: "100%", padding: "11px 0", borderRadius: 10,
-            background: saving ? "rgba(99,102,241,0.2)" : "linear-gradient(135deg, #6366f1, #8b5cf6)",
-            border: "none", color: "#fff", cursor: saving ? "not-allowed" : "pointer",
-            fontSize: "0.8rem", fontWeight: 700,
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-            boxShadow: saving ? "none" : "0 4px 16px rgba(99,102,241,0.35)",
-            transition: "all 0.2s",
-          }}
-        >
-          {saving ? <Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} /> : <Save size={15} />}
-          {saving ? "Đang lưu..." : "Lưu & Broadcast toàn hệ thống"}
-        </button>
-
-        {/* Feedback */}
-        {feedback && (
-          <div style={{
-            marginTop: 12, padding: "10px 14px", borderRadius: 10,
-            background: feedback.type === "success" ? "rgba(16,185,129,0.12)" : "rgba(239,68,68,0.12)",
-            border: `1px solid ${feedback.type === "success" ? "#10b98140" : "#ef444440"}`,
-            color: feedback.type === "success" ? "#10b981" : "#ef4444",
-            fontSize: "0.72rem", fontWeight: 500,
-            display: "flex", alignItems: "center", gap: 8,
-          }}>
-            {feedback.type === "success" ? <CheckCircle size={13} /> : <AlertTriangle size={13} />}
-            {feedback.msg}
-          </div>
-        )}
-      </div>
+      </form>
     </div>
   );
 }

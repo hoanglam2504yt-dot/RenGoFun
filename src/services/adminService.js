@@ -89,4 +89,28 @@ export const adminService = {
 
   /** 9. Lấy cấu hình hệ thống hiện tại */
   getSystemConfig: () => _fetch(`${BASE}/system/config`),
+
+  /** 10. Cập nhật role người dùng (free | pro_tier_1 | pro_tier_2 | admin) */
+  updateUserRole: (userId, role) =>
+    _fetch(`${BASE}/users/${userId}/role`, {
+      method: "PATCH",
+      body: JSON.stringify({ role }),
+    }),
+
+  /** 11. Lấy danh sách yêu cầu cấp lại mật khẩu */
+  getPasswordResets: ({ status = "pending", page = 1, limit = 20 } = {}) => {
+    const params = new URLSearchParams({ status, page, limit });
+    return _fetch(`${BASE}/password-resets?${params}`);
+  },
+
+  /** 12. Phê duyệt cấp lại mật khẩu (sinh pass mới và gửi Gmail) */
+  approvePasswordReset: (resetId) =>
+    _fetch(`${BASE}/password-resets/${resetId}/approve`, { method: "POST" }),
+
+  /** 13. Từ chối yêu cầu cấp lại mật khẩu */
+  rejectPasswordReset: (resetId, adminNote = "") =>
+    _fetch(`${BASE}/password-resets/${resetId}/reject`, {
+      method: "POST",
+      body: JSON.stringify({ admin_note: adminNote }),
+    }),
 };

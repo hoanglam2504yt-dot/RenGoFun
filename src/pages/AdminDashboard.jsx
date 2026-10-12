@@ -1,24 +1,28 @@
 /**
  * AdminDashboard.jsx — Trang quản trị hệ thống RenGoFun v2.0
  * Protected: Chỉ user.role === "admin" mới được truy cập.
+ * Đồng bộ chuẩn CSS Tokens từ layout.css, dashboard.css & admin.css
  */
 import { useState, useEffect } from "react";
 import {
   BarChart2, Users, Shield, Settings,
-  RefreshCw, WifiOff, ShieldCheck,
+  RefreshCw, WifiOff, ShieldCheck, KeyRound,
 } from "lucide-react";
+import "../styles/admin.css";
 import { adminService } from "../services/adminService";
 import MetricCards from "../components/admin/MetricCards";
 import UserTable from "../components/admin/UserTable";
 import SecurityLogViewer from "../components/admin/SecurityLogViewer";
 import SystemSettings from "../components/admin/SystemSettings";
+import PasswordResetManager from "../components/admin/PasswordResetManager";
 
 // ── Tab definitions ───────────────────────────────────────────────────────────
 const TABS = [
-  { id: "overview",  Icon: BarChart2, label: "Tổng quan" },
-  { id: "users",     Icon: Users,     label: "Người dùng" },
-  { id: "security",  Icon: Shield,    label: "Nhật ký an ninh" },
-  { id: "system",    Icon: Settings,  label: "Cài đặt từ xa" },
+  { id: "overview",  Icon: BarChart2, label: "Tổng quan & Chỉ số" },
+  { id: "users",     Icon: Users,     label: "Quản lý Người dùng" },
+  { id: "resets",    Icon: KeyRound,  label: "Duyệt Đổi Mật Khẩu" },
+  { id: "security",  Icon: Shield,    label: "Nhật ký An ninh" },
+  { id: "system",    Icon: Settings,  label: "Cấu hình Từ xa" },
 ];
 
 export default function AdminDashboard({ user }) {
@@ -44,120 +48,76 @@ export default function AdminDashboard({ user }) {
   useEffect(() => { fetchMetrics(); }, []);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", gap: 0 }}>
+    <div className="admin-page">
 
-      {/* ── Admin Header Bar ─────────────────────────────────────────────── */}
-      <div style={{
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "14px 20px",
-        background: "linear-gradient(90deg, rgba(99,102,241,0.08) 0%, rgba(139,92,246,0.05) 100%)",
-        borderBottom: "1px solid rgba(99,102,241,0.15)",
-        flexShrink: 0,
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <div style={{
-            width: 36, height: 36, borderRadius: 10,
-            background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            boxShadow: "0 4px 12px rgba(99,102,241,0.4)",
-          }}>
-            <ShieldCheck size={18} color="white" />
+      {/* ── Admin Header ─────────────────────────────────────────────────── */}
+      <div className="admin-header">
+        <div className="admin-header__brand">
+          <div className="admin-header__icon-box">
+            <ShieldCheck size={20} color="#ffffff" />
           </div>
           <div>
-            <div style={{ fontSize: "0.95rem", fontWeight: 800, color: "#fff", letterSpacing: "-0.01em" }}>
-              Bảng điều khiển hệ thống
-            </div>
-            <div style={{ fontSize: "0.65rem", color: "var(--text-secondary)" }}>
-              RenGoFun Admin Dashboard v2.0
+            <h1 className="admin-header__title">
+              Bảng Điều Khiển Quản Trị Hệ Thống
+            </h1>
+            <div className="admin-header__sub">
+              RenGoFun Ecosystem · Quản lý tập trung Cloud Auth & Desktop Licensing
             </div>
           </div>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div className="admin-header__meta">
           {/* Cloud status badge */}
-          <div style={{
-            display: "flex", alignItems: "center", gap: 6,
-            padding: "5px 12px", borderRadius: 20,
-            background: cloudStatus === "live" ? "rgba(16,185,129,0.12)" : cloudStatus === "offline" ? "rgba(239,68,68,0.12)" : "rgba(245,158,11,0.12)",
-            border: `1px solid ${cloudStatus === "live" ? "#10b98140" : cloudStatus === "offline" ? "#ef444440" : "#f59e0b40"}`,
-            fontSize: "0.65rem", fontWeight: 700,
-            color: cloudStatus === "live" ? "#10b981" : cloudStatus === "offline" ? "#ef4444" : "#f59e0b",
-          }}>
-            {cloudStatus === "offline" ? <WifiOff size={11} /> : (
-              <span style={{
-                width: 7, height: 7, borderRadius: "50%",
-                background: cloudStatus === "live" ? "#10b981" : "#f59e0b",
-                boxShadow: `0 0 6px ${cloudStatus === "live" ? "#10b981" : "#f59e0b"}`,
-                animation: cloudStatus === "checking" ? "pulse 1s infinite" : "none",
+          <div className={`admin-badge ${cloudStatus === "live" ? "admin-badge--live" : cloudStatus === "offline" ? "admin-badge--offline" : "admin-badge--checking"}`}>
+            {cloudStatus === "offline" ? (
+              <WifiOff size={11} />
+            ) : (
+              <span className="live-dot" style={{
+                background: cloudStatus === "live" ? "#34d399" : "#fbbf24",
+                boxShadow: `0 0 6px ${cloudStatus === "live" ? "rgba(52,211,153,0.7)" : "rgba(251,191,36,0.7)"}`,
               }} />
             )}
-            {cloudStatus === "live" ? "Cloud: Live" : cloudStatus === "offline" ? "Cloud: Offline" : "Đang kết nối..."}
+            {cloudStatus === "live" ? "Cloud: Sẵn sàng" : cloudStatus === "offline" ? "Cloud: Mất kết nối" : "Đang kiểm tra..."}
           </div>
 
-          {/* Admin badge */}
-          <div style={{
-            padding: "5px 12px", borderRadius: 20,
-            background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)",
-            fontSize: "0.65rem", fontWeight: 700, color: "#818cf8",
-          }}>
-            ⚙️ Admin: {user?.username}
+          {/* Admin identifier badge */}
+          <div className="admin-badge admin-badge--role">
+            <Shield size={11} />
+            <span>Admin: {user?.username}</span>
           </div>
 
-          {/* Refresh */}
+          {/* Refresh button */}
           <button
             onClick={fetchMetrics}
-            style={{
-              padding: "6px 10px", borderRadius: 8,
-              background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)",
-              color: "var(--text-secondary)", cursor: "pointer", display: "flex",
-            }}
+            className="admin-btn-action"
+            title="Làm mới chỉ số"
           >
             <RefreshCw size={13} style={loadingMetrics ? { animation: "spin 1s linear infinite" } : {}} />
+            <span>Làm mới</span>
           </button>
         </div>
       </div>
 
-      {/* ── Tab Navigation ─────────────────────────────────────────────────── */}
-      <div style={{
-        display: "flex", gap: 2, padding: "10px 20px",
-        borderBottom: "1px solid rgba(255,255,255,0.06)",
-        background: "rgba(0,0,0,0.15)",
-        flexShrink: 0,
-      }}>
+      {/* ── Navigation Tabs ──────────────────────────────────────────────── */}
+      <div className="admin-tabs">
         {TABS.map(({ id, Icon, label }) => (
           <button
             key={id}
             onClick={() => setActiveTab(id)}
-            style={{
-              display: "flex", alignItems: "center", gap: 7,
-              padding: "7px 14px", borderRadius: 8,
-              border: "none", cursor: "pointer", fontSize: "0.73rem", fontWeight: 600,
-              background: activeTab === id ? "rgba(99,102,241,0.2)" : "transparent",
-              color: activeTab === id ? "#818cf8" : "var(--text-secondary)",
-              borderBottom: activeTab === id ? "2px solid #6366f1" : "2px solid transparent",
-              transition: "all 0.15s",
-            }}
+            className={`admin-tab-btn ${activeTab === id ? "active" : ""}`}
           >
             <Icon size={14} strokeWidth={activeTab === id ? 2.5 : 1.75} />
-            {label}
+            <span>{label}</span>
           </button>
         ))}
       </div>
 
-      {/* ── Content Area ──────────────────────────────────────────────────── */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "20px 20px" }}>
+      {/* ── Tab Contents ─────────────────────────────────────────────────── */}
+      <div className="admin-content" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
-        {/* TAB: Tổng quan */}
+        {/* TAB 1: Tổng quan */}
         {activeTab === "overview" && (
-          <div>
-            <div style={{ marginBottom: 16 }}>
-              <h2 style={{ fontSize: "0.85rem", fontWeight: 700, color: "#fff", marginBottom: 4 }}>
-                📊 Tổng quan vận hành
-              </h2>
-              <p style={{ fontSize: "0.7rem", color: "var(--text-secondary)" }}>
-                Dữ liệu thời gian thực từ MongoDB Atlas · Tự động cập nhật khi làm mới
-              </p>
-            </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <MetricCards metrics={metrics} loading={loadingMetrics} />
 
             {/* Plan distribution bar */}
@@ -172,51 +132,35 @@ export default function AdminDashboard({ user }) {
           </div>
         )}
 
-        {/* TAB: Người dùng */}
+        {/* TAB 2: Quản lý Người dùng */}
         {activeTab === "users" && (
           <div>
-            <div style={{ marginBottom: 16 }}>
-              <h2 style={{ fontSize: "0.85rem", fontWeight: 700, color: "#fff", marginBottom: 4 }}>
-                👥 Quản lý người dùng
-              </h2>
-              <p style={{ fontSize: "0.7rem", color: "var(--text-secondary)" }}>
-                Tìm kiếm, lọc, khóa tài khoản và quản lý gói bản quyền
-              </p>
-            </div>
             <UserTable />
           </div>
         )}
 
-        {/* TAB: Nhật ký an ninh */}
+        {/* TAB: Duyệt Đổi Mật Khẩu */}
+        {activeTab === "resets" && (
+          <div>
+            <PasswordResetManager />
+          </div>
+        )}
+
+        {/* TAB 3: Nhật ký An ninh */}
         {activeTab === "security" && (
           <div>
-            <div style={{ marginBottom: 16 }}>
-              <h2 style={{ fontSize: "0.85rem", fontWeight: 700, color: "#fff", marginBottom: 4 }}>
-                🛡️ Nhật ký an ninh & Kiểm toán
-              </h2>
-              <p style={{ fontSize: "0.7rem", color: "var(--text-secondary)" }}>
-                Theo dõi đăng nhập, hành động admin và cảnh báo brute-force
-              </p>
-            </div>
             <SecurityLogViewer />
           </div>
         )}
 
-        {/* TAB: Cài đặt từ xa */}
+        {/* TAB 4: Cấu hình Từ xa */}
         {activeTab === "system" && (
           <div>
-            <div style={{ marginBottom: 16 }}>
-              <h2 style={{ fontSize: "0.85rem", fontWeight: 700, color: "#fff", marginBottom: 4 }}>
-                ⚙️ Cấu hình hệ thống từ xa
-              </h2>
-              <p style={{ fontSize: "0.7rem", color: "var(--text-secondary)" }}>
-                Cài đặt phiên bản tối thiểu, banner thông báo và chế độ bảo trì
-              </p>
-            </div>
             <SystemSettings />
           </div>
         )}
       </div>
+
     </div>
   );
 }
@@ -228,33 +172,48 @@ function PlanDistributionBar({ free, pro, enterprise, total }) {
   const entW  = total > 0 ? (enterprise / total) * 100 : 0;
 
   return (
-    <div style={{
-      background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)",
-      borderRadius: 14, padding: "20px 22px", marginTop: 4,
-    }}>
-      <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 14 }}>
-        Phân bổ gói bản quyền
-      </div>
-      {/* Bar */}
-      <div style={{ display: "flex", height: 10, borderRadius: 5, overflow: "hidden", marginBottom: 12, background: "rgba(255,255,255,0.05)" }}>
-        <div style={{ width: `${freeW}%`, background: "#9ca3af", transition: "width 0.4s" }} />
-        <div style={{ width: `${proW}%`,  background: "#06b6d4", transition: "width 0.4s" }} />
-        <div style={{ width: `${entW}%`,  background: "#f59e0b", transition: "width 0.4s" }} />
-      </div>
-      {/* Legend */}
-      <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
-        {[
-          { label: "Free",       count: free,       color: "#9ca3af" },
-          { label: "Pro",        count: pro,        color: "#06b6d4" },
-          { label: "Enterprise", count: enterprise, color: "#f59e0b" },
-        ].map(({ label, count, color }) => (
-          <div key={label} style={{ display: "flex", alignItems: "center", gap: 7 }}>
-            <span style={{ width: 10, height: 10, borderRadius: 3, background: color, display: "inline-block" }} />
-            <span style={{ fontSize: "0.72rem", color: "#94a3b8" }}>
-              {label}: <strong style={{ color: "#e2e8f0" }}>{count}</strong>
-            </span>
+    <div className="admin-card">
+      <div className="admin-card__header">
+        <div>
+          <div className="admin-card__title">
+            Phân Bổ Bản Quyền Gói Dịch Vụ
           </div>
-        ))}
+          <div className="admin-card__sub">
+            Tỷ lệ tài khoản người dùng theo các cấp độ giấy phép
+          </div>
+        </div>
+      </div>
+
+      <div style={{ padding: "18px 20px" }}>
+        {/* Progress Bar Container */}
+        <div style={{
+          display: "flex",
+          height: 10,
+          borderRadius: 6,
+          overflow: "hidden",
+          marginBottom: 16,
+          background: "rgba(255,255,255,0.06)",
+        }}>
+          <div style={{ width: `${freeW}%`, background: "#9ca3af", transition: "width 0.4s ease" }} title={`Free: ${free}`} />
+          <div style={{ width: `${proW}%`,  background: "#06b6d4", transition: "width 0.4s ease" }} title={`Pro: ${pro}`} />
+          <div style={{ width: `${entW}%`,  background: "#f59e0b", transition: "width 0.4s ease" }} title={`Enterprise: ${enterprise}`} />
+        </div>
+
+        {/* Legend */}
+        <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
+          {[
+            { label: "Gói Free",       count: free,       pct: freeW.toFixed(1), color: "#9ca3af" },
+            { label: "Gói Pro",        count: pro,        pct: proW.toFixed(1),  color: "#06b6d4" },
+            { label: "Gói Enterprise", count: enterprise, pct: entW.toFixed(1),  color: "#f59e0b" },
+          ].map(({ label, count, pct, color }) => (
+            <div key={label} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ width: 10, height: 10, borderRadius: 3, background: color, display: "inline-block" }} />
+              <span style={{ fontSize: "var(--fs-sm, 0.6875rem)", color: "var(--text-secondary)" }}>
+                {label}: <strong style={{ color: "var(--text-primary)", fontVariantNumeric: "tabular-nums" }}>{count} ({pct}%)</strong>
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

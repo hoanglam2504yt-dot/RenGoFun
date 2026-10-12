@@ -1,37 +1,59 @@
 /**
  * SecurityLogViewer.jsx — Nhật ký an ninh & kiểm toán Admin Dashboard
+ * Đồng bộ với admin.css và chuẩn UI thiết kế của dự án
  */
 import { useState, useEffect } from "react";
-import { ShieldAlert, RefreshCw, AlertTriangle, Filter } from "lucide-react";
+import {
+  ShieldAlert, RefreshCw, AlertTriangle,
+  Filter, CheckCircle, Clock, ChevronLeft, ChevronRight
+} from "lucide-react";
 import { adminService } from "../../services/adminService";
 
-const ACTION_COLORS = {
-  login_success:      { color: "#10b981", bg: "rgba(16,185,129,0.12)", label: "Đăng nhập thành công" },
-  login_failed:       { color: "#ef4444", bg: "rgba(239,68,68,0.12)",  label: "Đăng nhập thất bại" },
-  token_refreshed:    { color: "#6366f1", bg: "rgba(99,102,241,0.12)", label: "Làm mới token" },
-  admin_action:       { color: "#f59e0b", bg: "rgba(245,158,11,0.12)", label: "Hành động Admin" },
-  admin_ban_user:     { color: "#ef4444", bg: "rgba(239,68,68,0.12)",  label: "Admin khóa user" },
-  admin_unban_user:   { color: "#10b981", bg: "rgba(16,185,129,0.12)", label: "Admin mở khóa user" },
-  admin_change_plan:  { color: "#06b6d4", bg: "rgba(6,182,212,0.12)", label: "Admin đổi gói" },
-  admin_revoke_sessions: { color: "#f59e0b", bg: "rgba(245,158,11,0.12)", label: "Admin thu hồi phiên" },
+const ACTION_MAP = {
+  login_success:         { label: "Đăng nhập thành công", color: "#34d399", bg: "rgba(16,185,129,0.12)", border: "rgba(16,185,129,0.25)" },
+  login_failed:          { label: "Đăng nhập thất bại",   color: "#f87171", bg: "rgba(239,68,68,0.12)",  border: "rgba(239,68,68,0.25)" },
+  token_refreshed:       { label: "Làm mới Token",        color: "#818cf8", bg: "rgba(99,102,241,0.12)", border: "rgba(99,102,241,0.25)" },
+  admin_action:          { label: "Hành động Admin",      color: "#fbbf24", bg: "rgba(245,158,11,0.12)", border: "rgba(245,158,11,0.25)" },
+  admin_ban_user:        { label: "Khóa người dùng",      color: "#f87171", bg: "rgba(239,68,68,0.12)",  border: "rgba(239,68,68,0.25)" },
+  admin_unban_user:      { label: "Mở khóa tài khoản",    color: "#34d399", bg: "rgba(16,185,129,0.12)", border: "rgba(16,185,129,0.25)" },
+  admin_change_plan:     { label: "Cập nhật gói",         color: "#22d3ee", bg: "rgba(6,182,212,0.12)",  border: "rgba(6,182,212,0.25)" },
+  admin_revoke_sessions: { label: "Hủy phiên đăng nhập",  color: "#fbbf24", bg: "rgba(245,158,11,0.12)", border: "rgba(245,158,11,0.25)" },
 };
 
-function getActionStyle(action) {
-  return ACTION_COLORS[action] || { color: "#94a3b8", bg: "rgba(148,163,184,0.1)", label: action };
+function EventBadge({ action }) {
+  const item = ACTION_MAP[action] || {
+    label: action,
+    color: "var(--text-muted)",
+    bg: "rgba(255,255,255,0.05)",
+    border: "var(--border)",
+  };
+
+  return (
+    <span
+      className="admin-badge"
+      style={{
+        background: item.bg,
+        border: `1px solid ${item.border}`,
+        color: item.color,
+      }}
+    >
+      {item.label}
+    </span>
+  );
 }
 
 export default function SecurityLogViewer() {
-  const [data, setData]       = useState({ logs: [], total: 0, brute_force_alerts: [] });
-  const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState(null);
-  const [page, setPage]       = useState(1);
+  const [data, setData]         = useState({ logs: [], total: 0, brute_force_alerts: [] });
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState(null);
+  const [page, setPage]         = useState(1);
   const [actionType, setAction] = useState("all");
 
   const fetchLogs = async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await adminService.getAuditLogs({ page, limit: 50, actionType });
+      const res = await adminService.getAuditLogs({ page, limit: 20, actionType });
       setData(res);
     } catch (err) {
       setError(err.message);
@@ -40,171 +62,180 @@ export default function SecurityLogViewer() {
     }
   };
 
-  useEffect(() => { fetchLogs(); }, [page, actionType]);
+  useEffect(() => {
+    fetchLogs();
+  }, [page, actionType]);
 
-  const cellStyle = { padding: "10px 14px", fontSize: "0.7rem", borderBottom: "1px solid rgba(255,255,255,0.04)", verticalAlign: "middle" };
+  const totalPages = Math.ceil((data.total || 0) / 20) || 1;
 
   return (
-    <div>
-      {/* ── Brute-force Alerts ── */}
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+
+      {/* ── Brute-force Warning Alert Banner ── */}
       {data.brute_force_alerts?.length > 0 && (
         <div style={{
-          background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)",
-          borderRadius: 10, padding: "12px 16px", marginBottom: 16,
-          display: "flex", alignItems: "flex-start", gap: 10,
+          background: "rgba(239, 68, 68, 0.08)",
+          border: "1px solid rgba(239, 68, 68, 0.25)",
+          borderRadius: 12,
+          padding: "14px 18px",
+          display: "flex",
+          alignItems: "flex-start",
+          gap: 12,
         }}>
-          <AlertTriangle size={16} color="#ef4444" style={{ flexShrink: 0, marginTop: 1 }} />
+          <AlertTriangle size={18} color="#ef4444" style={{ flexShrink: 0, marginTop: 2 }} />
           <div>
-            <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "#ef4444", marginBottom: 4 }}>
-              ⚠️ Phát hiện {data.brute_force_alerts.length} IP tấn công Brute-force!
+            <div style={{ fontSize: "var(--fs-sm, 0.6875rem)", fontWeight: "var(--fw-label, 560)", color: "#f87171", marginBottom: 4 }}>
+              Cảnh báo: Phát hiện {data.brute_force_alerts.length} địa chỉ IP có dấu hiệu dò quét mật khẩu (Brute-force)
             </div>
-            {data.brute_force_alerts.map(alert => (
-              <div key={alert._id} style={{ fontSize: "0.68rem", color: "#fca5a5", marginTop: 2 }}>
-                IP <strong>{alert._id}</strong>: {alert.count} lần thất bại
-              </div>
-            ))}
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 6 }}>
+              {data.brute_force_alerts.map((alert) => (
+                <div
+                  key={alert._id}
+                  style={{
+                    fontSize: "var(--fs-xs, 0.625rem)",
+                    background: "rgba(239, 68, 68, 0.15)",
+                    border: "1px solid rgba(239, 68, 68, 0.3)",
+                    padding: "3px 8px",
+                    borderRadius: 6,
+                    color: "#fca5a5",
+                    fontVariantNumeric: "tabular-nums",
+                  }}
+                >
+                  IP: <strong>{alert._id}</strong> ({alert.count} lần thất bại trong 15 phút)
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}
 
-      {/* ── Toolbar ── */}
-      <div style={{ display: "flex", gap: 10, marginBottom: 14, alignItems: "center" }}>
-        <Filter size={13} color="var(--text-secondary)" />
-        <select
-          value={actionType}
-          onChange={e => { setAction(e.target.value); setPage(1); }}
-          style={{ padding: "7px 12px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 9, color: "#e2e8f0", fontSize: "0.72rem" }}
-        >
-          <option value="all">Tất cả sự kiện</option>
-          <option value="login_success">Đăng nhập thành công</option>
-          <option value="login_failed">Đăng nhập thất bại</option>
-          <option value="admin_ban_user">Admin khóa user</option>
-          <option value="admin_change_plan">Admin đổi gói</option>
-          <option value="admin_revoke_sessions">Admin thu hồi phiên</option>
-        </select>
-        <button
-          onClick={fetchLogs}
-          style={{
-            padding: "7px 12px", borderRadius: 9, border: "1px solid rgba(99,102,241,0.3)",
-            background: "rgba(99,102,241,0.1)", color: "#6366f1", cursor: "pointer",
-            display: "flex", alignItems: "center", gap: 5, fontSize: "0.72rem",
-          }}
-        >
-          <RefreshCw size={12} style={loading ? { animation: "spin 1s linear infinite" } : {}} />
-          Làm mới
-        </button>
-        <span style={{ marginLeft: "auto", fontSize: "0.68rem", color: "var(--text-secondary)" }}>
-          Tổng {data.total} bản ghi
-        </span>
-      </div>
-
-      {/* ── Log Table ── */}
-      <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: 12, border: "1px solid rgba(255,255,255,0.06)", overflow: "hidden" }}>
-        {error && (
-          <div style={{ padding: "10px 14px", color: "#ef4444", fontSize: "0.72rem", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-            ⚠️ {error}
+      {/* ── Main Log Panel ── */}
+      <div className="admin-card">
+        {/* Header & Filter */}
+        <div className="admin-card__header">
+          <div>
+            <div className="admin-card__title">
+              <ShieldAlert size={16} color="var(--accent-2, #818cf8)" />
+              <span>Nhật Ký An Ninh & Kiểm Toán Hệ Thống</span>
+            </div>
+            <div className="admin-card__sub">
+              Lưu vết thời gian thực mọi tác vụ đăng nhập và can thiệp quản trị
+            </div>
           </div>
-        )}
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr style={{ background: "rgba(255,255,255,0.03)" }}>
-              {["Thời gian", "Sự kiện", "Username / Admin", "IP Address", "HTTP Status"].map(h => (
-                <th key={h} style={{
-                  padding: "10px 14px", fontSize: "0.62rem", color: "#94a3b8", fontWeight: 700,
-                  textAlign: "left", textTransform: "uppercase", letterSpacing: "0.05em",
-                  borderBottom: "1px solid rgba(255,255,255,0.06)",
-                }}>
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
+
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {/* Filter */}
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <Filter size={13} color="var(--text-muted)" />
+              <select
+                value={actionType}
+                onChange={e => { setAction(e.target.value); setPage(1); }}
+                className="admin-select"
+              >
+                <option value="all">Tất cả sự kiện</option>
+                <option value="login_success">Đăng nhập thành công</option>
+                <option value="login_failed">Đăng nhập thất bại</option>
+                <option value="admin_ban_user">Admin khóa user</option>
+                <option value="admin_unban_user">Admin mở khóa user</option>
+                <option value="admin_change_plan">Admin đổi gói</option>
+                <option value="admin_revoke_sessions">Admin hủy phiên</option>
+              </select>
+            </div>
+
+            {/* Refresh */}
+            <button
+              onClick={fetchLogs}
+              className="admin-btn-action"
+              title="Làm mới log"
+            >
+              <RefreshCw size={12} style={loading ? { animation: "spin 1s linear infinite" } : {}} />
+            </button>
+          </div>
+        </div>
+
+        {/* Table */}
+        <div style={{ overflowX: "auto" }}>
+          <table className="admin-table">
+            <thead>
               <tr>
-                <td colSpan={5} style={{ ...cellStyle, textAlign: "center", padding: 32, color: "var(--text-secondary)" }}>
-                  <RefreshCw size={16} style={{ animation: "spin 1s linear infinite", display: "inline-block" }} />
-                  <div style={{ marginTop: 6, fontSize: "0.72rem" }}>Đang tải nhật ký...</div>
-                </td>
+                <th>Thời Gian</th>
+                <th>Sự Kiện</th>
+                <th>Tài Khoản</th>
+                <th>Địa Chỉ IP</th>
+                <th>Chi Tiết & Tham Số</th>
               </tr>
-            ) : data.logs.length === 0 ? (
-              <tr>
-                <td colSpan={5} style={{ ...cellStyle, textAlign: "center", padding: 28, color: "var(--text-secondary)", fontSize: "0.72rem" }}>
-                  <ShieldAlert size={20} style={{ display: "block", margin: "0 auto 6px" }} />
-                  Không có nhật ký nào
-                </td>
-              </tr>
-            ) : (
-              data.logs.map((log, i) => {
-                const style = getActionStyle(log.action);
-                return (
-                  <tr
-                    key={i}
-                    onMouseEnter={e => e.currentTarget.style.background = "rgba(99,102,241,0.04)"}
-                    onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-                    style={{ transition: "background 0.15s" }}
-                  >
-                    <td style={{ ...cellStyle, color: "#94a3b8", fontSize: "0.68rem", whiteSpace: "nowrap" }}>
+            </thead>
+            <tbody>
+              {loading && data.logs.length === 0 ? (
+                <tr>
+                  <td colSpan={5} style={{ textAlign: "center", padding: "36px 0", color: "var(--text-muted)" }}>
+                    <RefreshCw size={16} style={{ animation: "spin 1s linear infinite", display: "inline-block", marginRight: 8 }} />
+                    Đang tải nhật ký kiểm toán...
+                  </td>
+                </tr>
+              ) : data.logs.length === 0 ? (
+                <tr>
+                  <td colSpan={5} style={{ textAlign: "center", padding: "36px 0", color: "var(--text-muted)" }}>
+                    Không có bản ghi nhật ký phù hợp.
+                  </td>
+                </tr>
+              ) : (
+                data.logs.map((log, i) => (
+                  <tr key={log._id || i}>
+                    <td style={{ color: "var(--text-muted)", fontSize: "var(--fs-xs, 0.625rem)", whiteSpace: "nowrap" }}>
                       {log.timestamp ? new Date(log.timestamp).toLocaleString("vi-VN") : "—"}
                     </td>
-                    <td style={cellStyle}>
-                      <span style={{
-                        padding: "3px 8px", borderRadius: 6, fontSize: "0.62rem", fontWeight: 700,
-                        background: style.bg, color: style.color,
-                      }}>
-                        {style.label}
-                      </span>
+
+                    <td>
+                      <EventBadge action={log.action} />
                     </td>
-                    <td style={{ ...cellStyle, color: "#c7d2fe", fontWeight: 600, fontSize: "0.7rem" }}>
-                      {log.username || log.performed_by_admin || log.target_user || "—"}
-                      {log.target_user && log.performed_by_admin && (
-                        <span style={{ color: "var(--text-secondary)", fontWeight: 400 }}>
-                          {" "}→ {log.target_user}
-                        </span>
-                      )}
+
+                    <td style={{ fontWeight: "var(--fw-label, 560)" }}>
+                      {log.username || "—"}
                     </td>
-                    <td style={{ ...cellStyle, color: "#94a3b8", fontFamily: "monospace", fontSize: "0.68rem" }}>
+
+                    <td style={{ color: "var(--text-secondary)", fontFamily: "monospace", fontSize: "var(--fs-xs, 0.625rem)" }}>
                       {log.ip_address || "—"}
                     </td>
-                    <td style={cellStyle}>
-                      {log.http_status ? (
-                        <span style={{
-                          padding: "2px 7px", borderRadius: 5, fontSize: "0.62rem", fontWeight: 700,
-                          background: log.http_status < 300 ? "rgba(16,185,129,0.12)" : "rgba(239,68,68,0.12)",
-                          color: log.http_status < 300 ? "#10b981" : "#ef4444",
-                        }}>
-                          {log.http_status}
-                        </span>
-                      ) : "—"}
+
+                    <td style={{ color: "var(--text-secondary)", fontSize: "var(--fs-xs, 0.625rem)", maxWidth: 300, wordBreak: "break-word" }}>
+                      {typeof log.details === "object" ? JSON.stringify(log.details) : (log.details || "—")}
                     </td>
                   </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination */}
+        <div className="admin-pagination">
+          <span>
+            Trang <strong style={{ color: "var(--text-primary)" }}>{page}</strong> trên <strong style={{ color: "var(--text-primary)" }}>{totalPages}</strong> (Tổng {data.total || 0} bản ghi)
+          </span>
+
+          <div style={{ display: "flex", gap: 6 }}>
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page <= 1 || loading}
+              className="admin-pagination__btn"
+            >
+              <ChevronLeft size={13} />
+              <span>Trước</span>
+            </button>
+            <button
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages || loading}
+              className="admin-pagination__btn"
+            >
+              <span>Sau</span>
+              <ChevronRight size={13} />
+            </button>
+          </div>
+        </div>
+
       </div>
 
-      {/* Pagination */}
-      {data.total_pages > 1 && (
-        <div style={{ display: "flex", justifyContent: "center", gap: 6, marginTop: 12 }}>
-          {Array.from({ length: Math.min(data.total_pages, 5) }, (_, i) => i + 1).map(p => (
-            <button
-              key={p}
-              onClick={() => setPage(p)}
-              style={{
-                width: 30, height: 30, borderRadius: 7,
-                background: page === p ? "rgba(99,102,241,0.25)" : "rgba(255,255,255,0.05)",
-                border: `1px solid ${page === p ? "rgba(99,102,241,0.5)" : "rgba(255,255,255,0.1)"}`,
-                color: page === p ? "#818cf8" : "#94a3b8",
-                cursor: "pointer", fontSize: "0.72rem", fontWeight: 600,
-              }}
-            >
-              {p}
-            </button>
-          ))}
-        </div>
-      )}
     </div>
   );
 }

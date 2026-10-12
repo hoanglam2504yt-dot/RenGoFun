@@ -44,7 +44,8 @@ export const authService = {
                 localStorage.setItem("rengofun_token", data.access_token);
                 localStorage.setItem("rengofun_user", JSON.stringify({
                     username: data.username,
-                    plan: data.plan
+                    plan: data.plan,
+                    role: data.role || "user"
                 }));
             }
             return data;

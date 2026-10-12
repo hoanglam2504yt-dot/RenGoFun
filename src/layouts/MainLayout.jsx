@@ -14,6 +14,7 @@ import {
   CheckCircle,
   LogOut,
   User,
+  ShieldCheck,
 } from "lucide-react";
 
 // ── Nav data ─────────────────────────────────────────────────────────────────
@@ -100,6 +101,27 @@ function MainLayout({ currentView, onNavigate, user, onLogout, children }) {
           </div>
         ))}
 
+        {/* Admin nav button — chỉ hiện khi user.role === "admin" */}
+        {user?.role === "admin" && (
+          <div className="sidebar__section">
+            <div className="sidebar__section-label">Quản trị</div>
+            <button
+              id="nav-admin"
+              className={`sidebar__item ${currentView === "admin" ? "active" : ""}`}
+              onClick={() => onNavigate("admin")}
+              style={{
+                borderLeft: currentView === "admin" ? "2px solid #6366f1" : "2px solid transparent",
+                background: currentView === "admin" ? "rgba(99,102,241,0.12)" : undefined,
+              }}
+            >
+              <span className="sidebar__item-icon">
+                <ShieldCheck size={15} strokeWidth={1.75} color="#6366f1" />
+              </span>
+              <span style={{ color: "#818cf8", fontWeight: 700 }}>Quản trị hệ thống</span>
+            </button>
+          </div>
+        )}
+
         <div className="sidebar__divider" />
 
         {/* Footer status */}
@@ -123,7 +145,8 @@ function MainLayout({ currentView, onNavigate, user, onLogout, children }) {
               {currentView === "dashboard" ? "Tổng quan" :
                 currentView === "editor" ? "Editor chính" :
                   currentView === "settings" ? "Cài đặt & Tùy chỉnh" :
-                    currentView}
+                    currentView === "admin" ? "⚙️ Quản trị hệ thống" :
+                      currentView}
             </span>
           </div>
           <div className="header-chips">

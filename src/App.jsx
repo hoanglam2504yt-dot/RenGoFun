@@ -3,12 +3,31 @@ import MainLayout from "./layouts/MainLayout";
 import DashboardPage from "./pages/DashboardPage";
 import EditorPage from "./pages/EditorPage";
 import SettingsPage from "./pages/SettingsPage";
+import AdminDashboard from "./pages/AdminDashboard";
 import AuthModal from "./components/AuthModal";
 import { authService } from "./services/authService";
 import { initSettingsFromStorage } from "./hooks/useSettings";
 
 // ── View → Component map ──────────────────────────────────────────────────────
 function resolveView(view, navigate, user, onLogout) {
+  // ── Protected Admin Route ──────────────────────────────────────────────────
+  if (view === "admin") {
+    if (!user || user.role !== "admin") {
+      setTimeout(() => navigate("dashboard"), 0);
+      return (
+        <div style={{
+          display: "flex", alignItems: "center", justifyContent: "center",
+          height: "100%", flexDirection: "column", gap: 12,
+        }}>
+          <span style={{ fontSize: "2.5rem" }}>🚫</span>
+          <div style={{ fontSize: "0.9rem", color: "#ef4444", fontWeight: 700 }}>Không đủ thẩm quyền</div>
+          <div style={{ fontSize: "0.72rem", color: "var(--text-secondary)" }}>Khu vực này chỉ dành cho Quản trị viên.</div>
+        </div>
+      );
+    }
+    return <AdminDashboard user={user} />;
+  }
+
   switch (view) {
     case "editor":
       return <EditorPage />;

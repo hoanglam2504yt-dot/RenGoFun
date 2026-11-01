@@ -51,10 +51,10 @@ const STAT_CARDS = [
     sub: "Hiệu suất khay in DTF & Phim",
     accentColor: "linear-gradient(90deg,#10b981,#06b6d4)",
     gpuStats: [
-      { lbl: "VRAM",  val: "3.2 / 12S" },
-      { lbl: "TMP",   val: "56 · 38%"  },
-      { lbl: "WATT",  val: "50 / 58"   },
-      { lbl: "UTIL",  val: "54%"       },
+      { lbl: "VRAM", val: "3.2 / 12S" },
+      { lbl: "TMP", val: "56 · 38%" },
+      { lbl: "WATT", val: "50 / 58" },
+      { lbl: "UTIL", val: "54%" },
     ],
   },
 ];
@@ -72,7 +72,7 @@ const LAUNCHPAD_CARDS = [
   },
   {
     id: "queue",
-    name: "Xử lý hàng loạt (Queue)",
+    name: "Xử lý hàng loạt (Batch Processing)",
     Icon: Zap,
     desc: "Xử lý từng lượng server jobs, tự động sắp xếp theo thứ tự server.",
     meta: "Van Hang Bội → 2 lượng server",
@@ -136,26 +136,26 @@ const LAUNCHPAD_CARDS = [
 ];
 
 const PIPELINE_ROWS = [
-  { name: "Cyber_Tiger_Art.png",       size: "12.4 MB", dim: "4248×5",    status: "done",    ops: "Sắc Nét + (3KB FPT)" },
-  { name: "Vintage_Rider_Back.ps...",  size: "8.2 MB",  dim: "3200×4...", status: "done",    ops: "Phim in → Đổi sáng" },
-  { name: "Anime_Sakura_Front.pn...",  size: "7.1 MB",  dim: "3200×",     status: "pending", ops: "Kiểm tra → Pre-print" },
-  { name: "Streetwear_Oversize_B...",  size: "3.2 MB",  dim: "4176×",     status: "error",   ops: "—" },
+  { name: "Cyber_Tiger_Art.png", size: "12.4 MB", dim: "4248×5", status: "done", ops: "Sắc Nét + (3KB FPT)" },
+  { name: "Vintage_Rider_Back.ps...", size: "8.2 MB", dim: "3200×4...", status: "done", ops: "Phim in → Đổi sáng" },
+  { name: "Anime_Sakura_Front.pn...", size: "7.1 MB", dim: "3200×", status: "pending", ops: "Kiểm tra → Pre-print" },
+  { name: "Streetwear_Oversize_B...", size: "3.2 MB", dim: "4176×", status: "error", ops: "—" },
 ];
 
 const DEVICE_ROWS_PRINTER = [
-  { label: "Epson L18050 DTF Roll 20cm", val: "USB 3.0",  badgeCls: "badge--usb",    Icon: Printer  },
-  { label: "AcrRIP / CADlink Engine v10", val: "Port 4148", badgeCls: null,           Icon: Activity },
-  { label: "Hot Folder Watchdog",         val: "Active",   badgeCls: "badge--active", Icon: HardDrive},
+  { label: "Epson L18050 DTF Roll 20cm", val: "USB 3.0", badgeCls: "badge--usb", Icon: Printer },
+  { label: "AcrRIP / CADlink Engine v10", val: "Port 4148", badgeCls: null, Icon: Activity },
+  { label: "Hot Folder Watchdog", val: "Active", badgeCls: "badge--active", Icon: HardDrive },
 ];
 
 // ══════════════════════════════════════════════════════════════════════════════
 //  STATUS MAP
 // ══════════════════════════════════════════════════════════════════════════════
 const STATUS_MAP = {
-  done:    { cls: "pill--done",    text: "Xong",       Icon: CheckCircle2 },
-  pending: { cls: "pill--pending", text: "Đổi Sang",   Icon: Clock        },
-  error:   { cls: "pill--error",   text: "Chờ in",     Icon: XCircle      },
-  process: { cls: "pill--process", text: "Đang xử lý", Icon: Activity     },
+  done: { cls: "pill--done", text: "Xong", Icon: CheckCircle2 },
+  pending: { cls: "pill--pending", text: "Đổi Sang", Icon: Clock },
+  error: { cls: "pill--error", text: "Chờ in", Icon: XCircle },
+  process: { cls: "pill--process", text: "Đang xử lý", Icon: Activity },
 };
 
 // ══════════════════════════════════════════════════════════════════════════════

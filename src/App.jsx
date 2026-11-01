@@ -37,7 +37,8 @@ function resolveView(view, navigate, user, onLogout) {
       return <EditorPage />;
     case "queue":
     case "batch":
-      return <BatchProcessPage onNavigate={navigate} user={user} />;
+      // BatchProcessPage được giữ Keep-Alive bên dưới để không mất tiến trình & state khi chuyển trang
+      return null;
     case "settings":
       return <SettingsPage user={user} onLogout={onLogout} />;
     case "dashboard":
@@ -89,6 +90,8 @@ function App() {
     return <AuthModal onLoginSuccess={handleLoginSuccess} />;
   }
 
+  const isBatchView = currentView === "queue" || currentView === "batch";
+
   // Đã đăng nhập → hiện toàn bộ app + DownloadToastContainer toàn cục
   return (
     <>
@@ -99,7 +102,11 @@ function App() {
         onLogout={handleLogout}
       >
         <ErrorBoundary onReset={() => setCurrentView("dashboard")}>
-          {resolveView(currentView, handleNavigate, user, handleLogout)}
+          {/* Keep-Alive container cho BatchProcessPage để giữ nguyên tiến trình & hàng đợi khi chuyển tab */}
+          <div style={{ display: isBatchView ? "contents" : "none" }}>
+            <BatchProcessPage onNavigate={handleNavigate} user={user} isActive={isBatchView} />
+          </div>
+          {!isBatchView && resolveView(currentView, handleNavigate, user, handleLogout)}
         </ErrorBoundary>
       </MainLayout>
       <DownloadToastContainer />

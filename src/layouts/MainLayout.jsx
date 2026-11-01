@@ -29,7 +29,7 @@ const NAV_SECTIONS = [
   {
     label: "In ấn",
     items: [
-      { id: "queue", Icon: Layers, label: "Xử lý hàng loạt (Queue)", count: "3" },
+      { id: "queue", Icon: Layers, label: "Xử lý hàng loạt" },
       { id: "mockup", Icon: Box, label: "Tạo Mockup 3D" },
       { id: "smooth", Icon: Wand2, label: "Làm mượt & Kiểm viền DTF" },
       { id: "matting", Icon: Scissors, label: "Tách nền in & AI Matting" },
@@ -88,11 +88,12 @@ function MainLayout({ currentView, onNavigate, user, onLogout, children }) {
                 id={`nav-${id}`}
                 className={`sidebar__item ${currentView === id ? "active" : ""}`}
                 onClick={() => onNavigate(id)}
+                title={label}
               >
                 <span className="sidebar__item-icon">
                   <Icon size={15} strokeWidth={1.75} />
                 </span>
-                {label}
+                <span className="sidebar__item-label">{label}</span>
                 {count && (
                   <span className="sidebar__item-count">{count}</span>
                 )}
@@ -109,6 +110,7 @@ function MainLayout({ currentView, onNavigate, user, onLogout, children }) {
               id="nav-admin"
               className={`sidebar__item ${currentView === "admin" ? "active" : ""}`}
               onClick={() => onNavigate("admin")}
+              title="Quản trị hệ thống"
               style={{
                 borderLeft: currentView === "admin" ? "2px solid #6366f1" : "2px solid transparent",
                 background: currentView === "admin" ? "rgba(99,102,241,0.12)" : undefined,
@@ -117,7 +119,7 @@ function MainLayout({ currentView, onNavigate, user, onLogout, children }) {
               <span className="sidebar__item-icon">
                 <ShieldCheck size={15} strokeWidth={1.75} color="#6366f1" />
               </span>
-              <span style={{ color: "#818cf8", fontWeight: 700 }}>Quản trị hệ thống</span>
+              <span className="sidebar__item-label" style={{ color: "#818cf8", fontWeight: 700 }}>Quản trị hệ thống</span>
             </button>
           </div>
         )}
@@ -142,8 +144,8 @@ function MainLayout({ currentView, onNavigate, user, onLogout, children }) {
           <div className="top-header__breadcrumb">
             RenGoFun ›{" "}
             <span>
-              {currentView === "dashboard" ? "Tổng quan" :
-                currentView === "editor" ? "Editor chính" :
+              {currentView === "dashboard" ? "DashBoard" :
+                currentView === "editor" ? "Editor" :
                   currentView === "queue" ? "Xử lý hàng loạt (Batch Processing)" :
                     currentView === "settings" ? "Cài đặt & Tùy chỉnh" :
                       currentView === "admin" ? "⚙️ Quản trị hệ thống" :

@@ -1,0 +1,39 @@
+# ==============================================================================
+# RenGoFun/python_engine — Local Processing Engine .gitignore
+# Chặn các file sinh ra trong quá trình chạy FastAPI + OpenCV + SQLite Queue cục bộ
+# ==============================================================================
+
+# --- 1. Môi trường ảo Python & Bytecode Cache ---
+venv/
+.venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --- 2. Thư mục ảnh tạm & kết quả xuất của Batch Processing (KHÔNG ĐẨY LÊN GITHUB) ---
+_batch_temp/
+output/
+temp/
+exports/
+processed/
+
+# --- 3. Cơ sở dữ liệu SQLite cục bộ (rengofun_batch.db & WAL/SHM) ---
+*.db
+*.db-shm
+*.db-wal
+*.db-journal
+*.sqlite
+*.sqlite3
+*.sqlite-shm
+*.sqlite-wal
+
+# --- 4. Biến môi trường, Log & File nháp ---
+.env
+.env.*
+!.env.example
+*.log
+*.tmp
+*.bak
+scratch_*
+

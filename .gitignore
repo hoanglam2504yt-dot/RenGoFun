@@ -1,8 +1,8 @@
-# ==========================================
-# RenGoFun - Git Ignore Configuration
-# ==========================================
+# ==============================================================================
+# RenGoFun (Desktop Client & Local Engine) - Git Ignore Configuration
+# ==============================================================================
 
-# --- Environment & Sensitive Credentials ---
+# --- 1. Environment & Sensitive Credentials (KHÔNG ĐẨY LÊN GITHUB) ---
 .env
 .env.*
 !.env.example
@@ -16,33 +16,61 @@
 *.p12
 *.pfx
 
-# --- Node & Frontend Dependencies / Builds ---
+# --- 2. Node & Frontend Dependencies / Builds ---
 node_modules/
 dist/
 dist-ssr/
 
-# --- Rust & Tauri ---
+# --- 3. Rust & Tauri Build Artifacts ---
 src-tauri/target/
 src-tauri/gen/schemas/
+src-tauri/WixTools/
 
-# --- Python Engine & Virtual Environments ---
+# --- 4. Python Engine & Virtual Environments ---
 venv/
 .venv/
 python_engine/venv/
+python_engine/.venv/
 python_engine/__pycache__/
 __pycache__/
 *.py[cod]
 *$py.class
 
-# --- Executables, Installers & Dev Scripts ---
+# --- 5. Python Engine Runtime Data, Temp Upload & SQLite Queue (KHÔNG ĐẨY LÊN GITHUB) ---
+# Thư mục lưu ảnh upload/scan tạm thời khi xử lý hàng loạt (Batch Processing)
+python_engine/_batch_temp/
+python_engine/output/
+python_engine/temp/
+python_engine/exports/
+python_engine/processed/
+# Cơ sở dữ liệu hàng đợi SQLite cục bộ (rengofun_batch.db) và các file journal/WAL
+python_engine/*.db
+python_engine/*.db-shm
+python_engine/*.db-wal
+python_engine/*.db-journal
+python_engine/*.sqlite
+python_engine/*.sqlite3
+python_engine/*.sqlite-shm
+python_engine/*.sqlite-wal
+
+# --- 6. Executables, Installers & Local Dev Launchers (KHÔNG ĐẨY LÊN GITHUB) ---
 *.exe
 *.msi
 rustup-init.exe
-# Script khởi động nội bộ (chứa path tuyệt đối, không nên commit)
+# Script khởi động môi trường dev cục bộ trên máy cá nhân
 start_dev.bat
 start_silent.vbs
 
-# --- Logs ---
+# --- 7. Tài liệu nội bộ, AI Logs & File nháp kiểm thử ---
+md/
+docs/
+.agents/
+file_xuat_png/
+scratch_*
+*.tmp
+*.bak
+
+# --- 8. Logs ---
 logs/
 *.log
 npm-debug.log*
@@ -51,7 +79,7 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# --- Editor & IDE Files ---
+# --- 9. Editor & IDE Files ---
 .vscode/*
 !.vscode/extensions.json
 .idea/
@@ -61,16 +89,8 @@ lerna-debug.log*
 *.sln
 *.sw?
 
-# --- OS Artifacts ---
+# --- 10. OS Artifacts ---
 .DS_Store
 Thumbs.db
 desktop.ini
-
-# --- Docs / Temp Notes ---
-md/
-
-# --- Python Engine Outputs ---
-python_engine/output/
-python_engine/temp/
-python_engine/*.db
-python_engine/*.sqlite
+ehthumbs.db

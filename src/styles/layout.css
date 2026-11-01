@@ -4,7 +4,8 @@
 
 /* ── CSS Tokens (Dark Pro Theme) ── */
 :root {
-  --sidebar-w: 220px;
+  --sidebar-w:        220px;
+  --sidebar-collapsed: 52px;
   --header-h: 48px;
   --bg: #0d0d14;
   --surface: #12121c;
@@ -79,15 +80,26 @@
    SIDEBAR
 ══════════════════════════════════ */
 .sidebar {
-  width: var(--sidebar-w);
+  width: var(--sidebar-collapsed);
   flex-shrink: 0;
   background: var(--surface);
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  overflow: hidden;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
+  transition: width 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  z-index: 50;
+}
+
+/* Expanded: hover hoặc class .expanded */
+.sidebar:hover,
+.sidebar.expanded {
+  width: var(--sidebar-w);
+  overflow-y: auto;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.35);
 }
 
 /* Logo */
@@ -95,8 +107,29 @@
   display: flex;
   align-items: center;
   gap: 9px;
-  padding: 16px 16px 12px;
+  padding: 16px 11px 12px;
   border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  overflow: hidden;
+  min-height: 58px;
+  flex-shrink: 0;
+}
+
+/* Ẩn text logo khi collapsed, hiện khi hover/expanded */
+.sidebar__logo-name,
+.sidebar__logo-ver {
+  opacity: 0;
+  transform: translateX(-6px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  pointer-events: none;
+}
+
+.sidebar:hover .sidebar__logo-name,
+.sidebar:hover .sidebar__logo-ver,
+.sidebar.expanded .sidebar__logo-name,
+.sidebar.expanded .sidebar__logo-ver {
+  opacity: 1;
+  transform: translateX(0);
 }
 
 .sidebar__logo-icon {
@@ -125,9 +158,9 @@
   margin-top: 1px;
 }
 
-/* Nav sections */
 .sidebar__section {
   padding: 12px 0 4px;
+  overflow: hidden;
 }
 
 .sidebar__section-label {
@@ -137,27 +170,49 @@
   letter-spacing: 0.1em;
   color: var(--text-muted);
   padding: 0 16px 6px;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+}
+
+.sidebar:hover .sidebar__section-label,
+.sidebar.expanded .sidebar__section-label {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 /* Nav items */
 .sidebar__item {
   display: flex;
   align-items: center;
-  gap: 9px;
-  padding: 7px 14px;
-  margin: 1px 8px;
+  gap: 0;                        /* collapsed: no gap */
+  padding: 7px 0;
+  margin: 1px 4px;
   border-radius: 8px;
   cursor: pointer;
-  /* Nguyên tắc 2: dark bg → giảm weight xuống --fw-ui (420) thay vì 500
-     Độ dày chữ nhìn sẽ tương đương Medium nhưng không bị lóa */
-  font-size: var(--fs-sm);  /* 11px — đủ đọc ở sidebar chật */
-  font-weight: var(--fw-ui); /* 420 thay vì 500 */
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-ui);
   color: var(--text-secondary);
-  transition: background 0.15s, color 0.15s;
+  transition: background 0.15s, color 0.15s, padding 0.22s, gap 0.22s, margin 0.22s;
   border: none;
   background: none;
-  width: calc(100% - 16px);
+  width: calc(100% - 8px);
   text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  /* Collapsed: center the icon */
+  justify-content: center;
+}
+
+.sidebar:hover .sidebar__item,
+.sidebar.expanded .sidebar__item {
+  gap: 9px;
+  justify-content: flex-start;
+  padding-left: 10px;
+  padding-right: 10px;
+  margin: 1px 6px;
+  width: calc(100% - 12px);
 }
 
 .sidebar__item:hover {
@@ -176,35 +231,83 @@
 .sidebar__item-icon {
   font-size: 0.95rem;
   flex-shrink: 0;
-  width: 18px;
+  width: 20px;
+  min-width: 20px;
   text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
+/* Ẩn label khi collapsed */
+.sidebar__item-label {
+  max-width: 0;
+  overflow: hidden;
+  opacity: 0;
+  flex-shrink: 1;
+  transition: max-width 0.22s ease, opacity 0.15s ease;
+}
+
+.sidebar:hover .sidebar__item-label,
+.sidebar.expanded .sidebar__item-label {
+  max-width: 200px;
+  opacity: 1;
+  transition: max-width 0.22s ease, opacity 0.18s ease 0.05s;
+}
+
+/* Ẩn count badge khi collapsed */
 .sidebar__item-count {
-  margin-left: auto;
+  max-width: 0;
+  overflow: hidden;
+  opacity: 0;
+  margin-left: 0;
   font-size: 0.6rem;
   font-weight: 700;
   background: rgba(99, 102, 241, 0.25);
   color: var(--accent-2);
-  padding: 1px 5px;
+  padding: 0;
   border-radius: 8px;
+  flex-shrink: 0;
+  transition: max-width 0.22s ease, opacity 0.15s ease,
+              padding 0.22s ease, margin 0.22s ease;
+}
+
+.sidebar:hover .sidebar__item-count,
+.sidebar.expanded .sidebar__item-count {
+  max-width: 40px;
+  opacity: 1;
+  margin-left: auto;
+  padding: 1px 5px;
+  transition: max-width 0.22s ease, opacity 0.18s ease 0.05s,
+              padding 0.22s ease, margin 0.22s ease;
 }
 
 /* Divider */
 .sidebar__divider {
   height: 1px;
   background: var(--border);
-  margin: 6px 16px;
+  margin: 6px 8px;
 }
 
-/* Bottom status */
+/* Bottom status — ẩn khi collapsed */
 .sidebar__footer {
   margin-top: auto;
-  padding: 10px 14px 14px;
+  padding: 10px 10px 14px;
   border-top: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   gap: 6px;
+  overflow: hidden;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.sidebar:hover .sidebar__footer,
+.sidebar.expanded .sidebar__footer {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .status-row {

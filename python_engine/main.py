@@ -1202,39 +1202,44 @@ def _render_xray_bgra(img: np.ndarray) -> np.ndarray:
     return xray
 
 
-@app.post("/process-batch-item")
-async def process_batch_item(
-    file: UploadFile = File(...),
-    preset: str = Form("dtf_sharpness_defringe"),
-    choke_px: float = Form(1.5),
-    dust_enabled: bool = Form(True),
-    dust_threshold: int = Form(5),
-    defringe_enabled: bool = Form(True),
-    defringe_radius: int = Form(2),
-    choke_enabled: bool = Form(True),
-    usm_enabled: bool = Form(True),
-    usm_amount: float = Form(120.0),
-    resize_enabled: bool = Form(False),
-    long_edge_cm: float = Form(30.0),
-    dpi: int = Form(300),
-    colorbalance: bool = Form(False),
-    export_dir: str = Form(""),
-    item_db_id: int = Form(0),
+def _sync_process_batch_item(
+    contents: Optional[bytes],
+    orig_filename: str,
+    preset: str,
+    choke_px: float,
+    dust_enabled: bool,
+    dust_threshold: int,
+    defringe_enabled: bool,
+    defringe_radius: int,
+    choke_enabled: bool,
+    usm_enabled: bool,
+    usm_amount: float,
+    resize_enabled: bool,
+    long_edge_cm: float,
+    dpi: int,
+    colorbalance: bool,
+    export_dir: str,
+    item_db_id: int,
 ):
-    """
-    Xử lý thực tế từng file ảnh trong hàng đợi Batch Processing theo 8 thuật toán đặc tả
-    kết hợp đầy đủ 6 thông số Pipeline từ cột trái:
-    - Mọi ma trận đầu vào/đầu ra đều chuẩn hóa về hệ 4 kênh màu BGRA (uint8).
-    - Bảo toàn tuyệt đối kênh Alpha cho lớp mực trắng lót (White Underbase).
-    - Tự động ghi file ra export_dir và cập nhật SQLite nếu có item_db_id.
-    """
     t0 = time.time()
-    contents = await file.read()
-    nparr = np.frombuffer(contents, np.uint8)
-    raw_img = cv2.imdecode(nparr, cv2.IMREAD_UNCHANGED)
+    raw_img = None
+    safe_fname = os.path.basename(orig_filename or f"item_{int(time.time())}.png")
+
+    if contents:
+        nparr = np.frombuffer(contents, np.uint8)
+        raw_img = cv2.imdecode(nparr, cv2.IMREAD_UNCHANGED)
+    elif item_db_id > 0:
+        with get_db_connection() as conn:
+            row = conn.execute("SELECT filename, input_path FROM queue_items WHERE id = ?", (item_db_id,)).fetchone()
+            if row:
+                if row["filename"]:
+                    safe_fname = os.path.basename(row["filename"])
+                in_path = row["input_path"]
+                if in_path and os.path.exists(str(in_path)):
+                    raw_img = cv2.imread(str(in_path), cv2.IMREAD_UNCHANGED)
 
     if raw_img is None:
-        return JSONResponse(status_code=400, content={"error": "Không đọc được tệp hình ảnh"})
+        return None, None
 
     img = _ensure_bgra(raw_img)
     blur_score = None
@@ -1258,54 +1263,37 @@ async def process_batch_item(
 
     # Dispatch theo từng chế độ xử lý ảnh + kết hợp thông số Pipeline
     if preset in ("dtf_sharpness_defringe", "defringe_v2", "sharpness"):
-        # Thực thi trực tiếp 6 bước Pipeline từ cột trái
         result, removed_dust = _apply_6step_pipeline(img, pipeline_cfg)
-
     elif preset in ("harden_edge", "harden"):
-        # 1. Tăng sắc nét viền (Làm cứng viền bán trong suốt a > 127 + USM BGR)
         result = _algo_harden_edge_usm(img, threshold=127)
         if colorbalance:
             result = _algo_grayscale_luminance(result)
-
     elif preset in ("smooth_contour", "smooth"):
-        # 2. Làm mượt viền & Xoá đen (Bo viền Chaikin 1/4 & 3/4 + xóa RGB<30 giáp ranh Alpha)
         result = _algo_smooth_contour_chaikin(img, refinements=2)
         if colorbalance:
             result = _algo_grayscale_luminance(result)
-
     elif preset in ("denoise_deskew", "denoise"):
-        # 3. Làm sạch tạp âm & Bỏ thẳng (Connected Components + MinAreaRect warpAffine 4 kênh)
         min_area = max(10, int(dust_threshold)) if dust_enabled else 10
         result, removed_dust = _algo_denoise_and_deskew(img, min_area=min_area)
         if colorbalance:
             result = _algo_grayscale_luminance(result)
-
     elif preset == "grayscale":
-        # 4. Trắng đen (Chuyển sang Grayscale Luminance L = 0.299*R + 0.587*G + 0.114*B giữ Alpha)
         result = _algo_grayscale_luminance(img)
-
     elif preset == "blur_detect":
-        # 5. Lọc & Dò ảnh mờ nhòe (Laplacian Variance trên kênh RGB, giữ nguyên ảnh 4 kênh BGRA)
         blur_score = _laplacian_score(img)
         result = img
-
     elif preset in ("defringe_resize", "resize"):
-        # 6. Khử viền (Color Bleeding) + Resize (mặc định 30cm @ 300 DPI = 3543px, hoặc theo long_edge_cm)
         target_cm = float(long_edge_cm) if resize_enabled and long_edge_cm > 0 else 30.0
         result = _algo_defringe_resize_30cm(img, target_cm=target_cm, dpi=dpi_val)
         if colorbalance:
             result = _algo_grayscale_luminance(result)
-
     elif preset in ("defringe_choke", "choke"):
-        # 7. Defringe (Color Bleeding) + Choke (MORPH_CROSS 3x3 trên kênh Alpha)
         result = _algo_defringe_choke(img, iterations=max(1, int(round(choke_px))))
         if colorbalance:
             result = _algo_grayscale_luminance(result)
-
     else:
         result, removed_dust = _apply_6step_pipeline(img, pipeline_cfg)
 
-    # Nếu người dùng chủ động bật thêm bước 5 (Resize Lanczos-4) trong Cấu hình Pipeline cho các preset khác
     if resize_enabled and float(long_edge_cm) > 0 and preset not in ("dtf_sharpness_defringe", "defringe_v2", "sharpness", "defringe_resize", "resize"):
         cur_h, cur_w = result.shape[:2]
         target_px = max(1, int(round((float(long_edge_cm) / 2.54) * dpi_val)))
@@ -1325,7 +1313,6 @@ async def process_batch_item(
     process_ms = max(1, int(elapsed * 1000))
     render_time_str = f"{max(elapsed, 0.08):.2f}s"
 
-    # Tính độ sạch của kênh Alpha thực tế
     alpha_clean_pct = 100.0
     a_channel = result[:, :, 3]
     semi_count = np.count_nonzero((a_channel > 0) & (a_channel < 255))
@@ -1334,14 +1321,11 @@ async def process_batch_item(
         semi_ratio = (semi_count / total_pixels) * 100.0
         alpha_clean_pct = max(0.0, 100.0 - semi_ratio)
 
-    # Chuyển đổi BGRA sang PIL RGBA để nhúng chuẩn DPI
     pil_res = Image.fromarray(cv2.cvtColor(result, cv2.COLOR_BGRA2RGBA), mode="RGBA")
     buf = io.BytesIO()
     pil_res.save(buf, format="PNG", dpi=(dpi_val, dpi_val), compress_level=3)
     output_bytes = buf.getvalue()
 
-    # Lưu bản sao vào TEMP_DIR (và export_dir nếu hợp lệ) + cập nhật SQLite
-    safe_fname = os.path.basename(file.filename or f"item_{int(time.time())}.png")
     base_no_ext = os.path.splitext(safe_fname)[0]
     out_filename = f"DTF_PRO_{base_no_ext}.png"
     saved_output_path = os.path.join(TEMP_DIR, out_filename)
@@ -1382,6 +1366,59 @@ async def process_batch_item(
         "X-DPI": f"{dpi_val} DPI CMYK RGBA",
         "Access-Control-Expose-Headers": "X-Render-Time, X-Resolution, X-Alpha-Clean, X-Blur-Score, X-Blur-Warning, X-Removed-Dust, X-Output-Path, X-File-Size, X-DPI, Content-Disposition",
     }
+    return output_bytes, headers
+
+
+@app.post("/process-batch-item")
+async def process_batch_item(
+    file: Optional[UploadFile] = File(None),
+    preset: str = Form("dtf_sharpness_defringe"),
+    choke_px: float = Form(1.5),
+    dust_enabled: bool = Form(True),
+    dust_threshold: int = Form(5),
+    defringe_enabled: bool = Form(True),
+    defringe_radius: int = Form(2),
+    choke_enabled: bool = Form(True),
+    usm_enabled: bool = Form(True),
+    usm_amount: float = Form(120.0),
+    resize_enabled: bool = Form(False),
+    long_edge_cm: float = Form(30.0),
+    dpi: int = Form(300),
+    colorbalance: bool = Form(False),
+    export_dir: str = Form(""),
+    item_db_id: int = Form(0),
+):
+    """
+    Xử lý thực tế từng file ảnh trong hàng đợi Batch Processing theo 8 thuật toán đặc tả
+    kết hợp đầy đủ 6 thông số Pipeline (chạy trong ThreadPool để không bao giờ chặn
+    event loop của /system-metrics hay WebSocket khi xử lý ảnh lớn 4500x5400).
+    """
+    contents = await file.read() if file is not None else None
+    orig_filename = (file.filename if file is not None else "") or ""
+
+    output_bytes, headers = await asyncio.to_thread(
+        _sync_process_batch_item,
+        contents,
+        orig_filename,
+        preset,
+        choke_px,
+        dust_enabled,
+        dust_threshold,
+        defringe_enabled,
+        defringe_radius,
+        choke_enabled,
+        usm_enabled,
+        usm_amount,
+        resize_enabled,
+        long_edge_cm,
+        dpi,
+        colorbalance,
+        export_dir,
+        item_db_id,
+    )
+
+    if output_bytes is None:
+        return JSONResponse(status_code=400, content={"error": "Không đọc được tệp hình ảnh"})
 
     return Response(content=output_bytes, media_type="image/png", headers=headers)
 

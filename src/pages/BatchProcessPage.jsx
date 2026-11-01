@@ -245,6 +245,12 @@ export default function BatchProcessPage({ isActive = true }) {
   const folderInputRef = useRef(null);
   const pipelinePopoverRef = useRef(null);
   const wsRef = useRef(null);
+  const hwFailCountRef = useRef(0);
+  const isRunningRef = useRef(false);
+
+  useEffect(() => {
+    isRunningRef.current = isRunning;
+  }, [isRunning]);
 
   // Tên Pipeline đồng bộ 100% với Chế độ xử lý + trạng thái (Tùy chỉnh)
   const currentPipelineLabel = getSynchronizedPipelineName(preset, pipeline);
@@ -408,13 +414,14 @@ export default function BatchProcessPage({ isActive = true }) {
     let isMounted = true;
     const fetch_hw = async () => {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 1800);
+      const timeoutId = setTimeout(() => controller.abort(), 6000);
       try {
         const res = await fetch(`${LOCAL_API_BASE}/system-metrics`, { signal: controller.signal });
         clearTimeout(timeoutId);
         if (res.ok) {
           const data = await res.json();
           if (isMounted) {
+            hwFailCountRef.current = 0;
             setApiConnected(true);
             setHwMetrics(prev => ({
               ...prev, ...data,
@@ -423,15 +430,25 @@ export default function BatchProcessPage({ isActive = true }) {
             }));
           }
         } else if (isMounted) {
-          setApiConnected(false);
+          hwFailCountRef.current += 1;
+          if (!isRunningRef.current && hwFailCountRef.current >= 2) {
+            setApiConnected(false);
+          }
         }
       } catch (_) {
         clearTimeout(timeoutId);
-        if (isMounted) setApiConnected(false);
+        if (isMounted) {
+          hwFailCountRef.current += 1;
+          // Khi đang xử lý ảnh nặng (isRunningRef.current === true), không báo mất kết nối giả
+          // trừ khi chính request xử lý ảnh bị lỗi mạng hoặc đã mất phản hồi liên tiếp >= 3 lần (18s)
+          if ((!isRunningRef.current && hwFailCountRef.current >= 2) || hwFailCountRef.current >= 3) {
+            setApiConnected(false);
+          }
+        }
       }
     };
     fetch_hw();
-    const iv = setInterval(fetch_hw, 2000);
+    const iv = setInterval(fetch_hw, 2500);
     return () => { isMounted = false; clearInterval(iv); };
   }, []);
 
@@ -703,10 +720,13 @@ export default function BatchProcessPage({ isActive = true }) {
     let outH = item.height;
     let dustCount = item.removedDust || 0;
     let itemSubText = null;
-    if (item.originalFile) {
+
+    if (item.originalFile || item.dbId) {
       try {
         const formData = new FormData();
-        formData.append("file", item.originalFile);
+        if (item.originalFile) {
+          formData.append("file", item.originalFile);
+        }
         formData.append("preset", preset);
         formData.append("dust_enabled", String(Boolean(pipeline.dust)));
         formData.append("dust_threshold", String(pipeline.dustThreshold ?? 5));
@@ -725,6 +745,8 @@ export default function BatchProcessPage({ isActive = true }) {
 
         const res = await fetch(`${LOCAL_API_BASE}/process-batch-item`, { method: "POST", body: formData });
         if (res.ok) {
+          hwFailCountRef.current = 0;
+          setApiConnected(true);
           const blob = await res.blob();
           processedUrl = URL.createObjectURL(blob);
           const ht = res.headers.get("X-Render-Time");
@@ -749,34 +771,27 @@ export default function BatchProcessPage({ isActive = true }) {
               ? `Cảnh báo mờ nhòe (Laplacian: ${bScore.toFixed(1)})`
               : `Đạt chuẩn nét (Laplacian: ${bScore.toFixed(1)})`;
           }
-        } else { renderTimeSec = (performance.now() - t0) / 1000; }
-      } catch (_) { renderTimeSec = (performance.now() - t0) / 1000; }
-    } else if (item.dbId) {
-      try {
-        const jobRes = await fetch(`${LOCAL_API_BASE}/api/batch/create-job`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            export_dir: exportPath,
-            worker_threads: workerThreads,
-            preset_config: { preset, ...pipeline },
-            item_ids: [item.dbId],
-          }),
-        });
-        if (jobRes.ok) {
-          const jobData = await jobRes.json();
-          const startRes = await fetch(`${LOCAL_API_BASE}/api/batch/start`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ job_id: jobData.job_id, worker_threads: 1, pipeline: { preset, ...pipeline }, export_dir: exportPath }),
-          });
-          if (startRes.ok) {
-            renderTimeSec = (performance.now() - t0) / 1000;
-            processedUrl = `${LOCAL_API_BASE}/api/inspector/preview?file_id=${item.dbId}&mode=normal&t=${Date.now()}`;
-          }
+        } else {
+          hwFailCountRef.current = 0;
+          setApiConnected(true);
+          let errMsg = "Lỗi xử lý tệp trên FastAPI";
+          try {
+            const errJson = await res.json();
+            if (errJson?.error) errMsg = errJson.error;
+          } catch (_) { }
+          setQueue(prev => prev.map(q => q.id === item.id ? {
+            ...q, status: "error", subText: errMsg, pipelineText: activeTag,
+          } : q));
+          return;
         }
       } catch (_) {
-        renderTimeSec = (performance.now() - t0) / 1000;
+        // Không kết nối được tới FastAPI Backend -> báo lỗi thật, dừng tiến trình thay vì báo Hoàn tất giả
+        setApiConnected(false);
+        cancelRef.current = true;
+        setQueue(prev => prev.map(q => q.id === item.id ? {
+          ...q, status: "error", subText: "Lỗi: Không kết nối được FastAPI Backend", pipelineText: activeTag,
+        } : q));
+        return;
       }
     } else {
       await new Promise(r => setTimeout(r, 160 + Math.random() * 140));
@@ -808,6 +823,28 @@ export default function BatchProcessPage({ isActive = true }) {
   const toggleBatchProcess = async () => {
     if (isRunning) { cancelRef.current = true; setIsRunning(false); return; }
     if (queue.length === 0) return;
+
+    const hasRealFiles = queue.some(f => !f.isDemo);
+    if (hasRealFiles) {
+      try {
+        const pingCtrl = new AbortController();
+        const pingTimer = setTimeout(() => pingCtrl.abort(), 4000);
+        const pingRes = await fetch(`${LOCAL_API_BASE}/system-metrics`, { signal: pingCtrl.signal });
+        clearTimeout(pingTimer);
+        if (!pingRes.ok) throw new Error("Offline");
+        hwFailCountRef.current = 0;
+        setApiConnected(true);
+      } catch (_) {
+        setApiConnected(false);
+        setQueue(prev => prev.map(f => (
+          f.status !== "done"
+            ? { ...f, status: "error", subText: "Không thể xử lý: FastAPI Backend chưa kết nối!" }
+            : f
+        )));
+        return;
+      }
+    }
+
     let itemsToRun = queue.filter(f => f.status !== "done");
     if (itemsToRun.length === 0) {
       setQueue(prev => prev.map(f => ({ ...f, status: "waiting", subText: "Đang chờ luồng trống...", processedUrl: null, pipelineText: currentPipelineLabel })));
@@ -1205,7 +1242,7 @@ export default function BatchProcessPage({ isActive = true }) {
               <Scan size={12} />{xrayMode ? "X-Ray Bật" : "Soi Bụi Alpha"}<kbd className="batch-key-hint">M</kbd>
             </button>
           </div>
-          <div className="batch-preview-viewport" style={{ ...inspectorBgStyle, flex: "0 0 210px" }}>
+          <div className="batch-preview-viewport" style={{ ...inspectorBgStyle, flex: "0 0 350px" }}>
             {selectedItem ? (
               <>
                 <img src={inspectorSrc || selectedItem.previewUrl} alt={selectedItem.name}

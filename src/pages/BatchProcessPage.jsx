@@ -51,11 +51,14 @@ function createDemoSvg(type, color1 = "#6366f1", color2 = "#ec4899", title = "DT
 
 const DEFAULT_PIPELINE = {
   dust: true, dustThreshold: 5,
-  defringe: true, defringeRadius: 2,
-  choke: true, chokePx: 1.5,
+  alphaCutoff: 22, edgeBoost: 45,
+  floodFillBg: false, bgTolerance: 35,
+  defringe: true, defringeRadius: 2, dehalo: 60,
+  choke: true, chokePx: 1.5, erodeSteps: 0,
   usm: true, usmAmount: 120,
   resize: true, longEdgeCm: 30, dpi: 300,
   colorbalance: false,
+  colorMode: "RGBA",
 };
 
 /**
@@ -66,104 +69,152 @@ const PRESET_OPTIONS = [
     id: "dtf_sharpness_defringe",
     name: "DTF Print Sharpness + Defringe V2",
     defaultPipeline: {
-      dust: true, dustThreshold: 5,
-      defringe: true, defringeRadius: 2,
-      choke: true, chokePx: 1.5,
+      dust: true, dustThreshold: 5, alphaCutoff: 22, edgeBoost: 45, floodFillBg: false, bgTolerance: 35,
+      defringe: true, defringeRadius: 2, dehalo: 60,
+      choke: true, chokePx: 1.5, erodeSteps: 0,
       usm: true, usmAmount: 120,
       resize: true, longEdgeCm: 30, dpi: 300,
-      colorbalance: false,
+      colorbalance: false, colorMode: "RGBA",
+    },
+  },
+  {
+    id: "clean_edge_4stage",
+    name: "Làm sạch nền & viền (4 giai đoạn)",
+    defaultPipeline: {
+      dust: true, dustThreshold: 5, alphaCutoff: 22, edgeBoost: 45, floodFillBg: false, bgTolerance: 35,
+      defringe: true, defringeRadius: 2, dehalo: 60,
+      choke: false, chokePx: 1.0, erodeSteps: 0,
+      usm: false, usmAmount: 120,
+      resize: false, longEdgeCm: 30, dpi: 300,
+      colorbalance: false, colorMode: "RGBA",
+    },
+  },
+  {
+    id: "flood_fill_clean_edge",
+    name: "Tách nền phẳng 4 góc + Làm sạch viền",
+    defaultPipeline: {
+      dust: true, dustThreshold: 5, alphaCutoff: 22, edgeBoost: 45, floodFillBg: true, bgTolerance: 35,
+      defringe: true, defringeRadius: 2, dehalo: 60,
+      choke: false, chokePx: 1.0, erodeSteps: 0,
+      usm: false, usmAmount: 120,
+      resize: false, longEdgeCm: 30, dpi: 300,
+      colorbalance: false, colorMode: "RGBA",
     },
   },
   {
     id: "harden_edge",
     name: "Tăng sắc nét viền",
     defaultPipeline: {
-      dust: true, dustThreshold: 5,
-      defringe: true, defringeRadius: 1,
-      choke: false, chokePx: 1.0,
+      dust: true, dustThreshold: 5, alphaCutoff: 28, edgeBoost: 65, floodFillBg: false, bgTolerance: 35,
+      defringe: true, defringeRadius: 1, dehalo: 60,
+      choke: false, chokePx: 1.0, erodeSteps: 0,
       usm: true, usmAmount: 180,
       resize: false, longEdgeCm: 30, dpi: 300,
-      colorbalance: false,
+      colorbalance: false, colorMode: "RGBA",
     },
   },
   {
     id: "smooth_contour",
     name: "Làm mượt viền & Xoá đen",
     defaultPipeline: {
-      dust: true, dustThreshold: 8,
-      defringe: true, defringeRadius: 3,
-      choke: true, chokePx: 1.0,
+      dust: true, dustThreshold: 8, alphaCutoff: 22, edgeBoost: 45, floodFillBg: false, bgTolerance: 35,
+      defringe: true, defringeRadius: 3, dehalo: 75,
+      choke: true, chokePx: 1.0, erodeSteps: 1,
       usm: false, usmAmount: 100,
       resize: false, longEdgeCm: 30, dpi: 300,
-      colorbalance: false,
+      colorbalance: false, colorMode: "RGBA",
     },
   },
   {
     id: "denoise_deskew",
     name: "Làm sạch tạp âm & Bỏ thẳng",
     defaultPipeline: {
-      dust: true, dustThreshold: 15,
-      defringe: true, defringeRadius: 2,
-      choke: false, chokePx: 1.0,
+      dust: true, dustThreshold: 15, alphaCutoff: 22, edgeBoost: 45, floodFillBg: false, bgTolerance: 35,
+      defringe: true, defringeRadius: 2, dehalo: 60,
+      choke: false, chokePx: 1.0, erodeSteps: 0,
       usm: true, usmAmount: 110,
       resize: false, longEdgeCm: 30, dpi: 300,
-      colorbalance: false,
+      colorbalance: false, colorMode: "RGBA",
     },
   },
   {
     id: "grayscale",
     name: "Trắng đen",
     defaultPipeline: {
-      dust: true, dustThreshold: 5,
-      defringe: false, defringeRadius: 2,
-      choke: false, chokePx: 1.0,
+      dust: true, dustThreshold: 5, alphaCutoff: 22, edgeBoost: 45, floodFillBg: false, bgTolerance: 35,
+      defringe: false, defringeRadius: 2, dehalo: 60,
+      choke: false, chokePx: 1.0, erodeSteps: 0,
       usm: false, usmAmount: 100,
       resize: false, longEdgeCm: 30, dpi: 300,
-      colorbalance: true,
+      colorbalance: true, colorMode: "RGBA",
     },
   },
   {
     id: "blur_detect",
     name: "Lọc & Dò ảnh mờ nhòe",
     defaultPipeline: {
-      dust: false, dustThreshold: 5,
-      defringe: false, defringeRadius: 2,
-      choke: false, chokePx: 1.0,
+      dust: false, dustThreshold: 5, alphaCutoff: 22, edgeBoost: 45, floodFillBg: false, bgTolerance: 35,
+      defringe: false, defringeRadius: 2, dehalo: 60,
+      choke: false, chokePx: 1.0, erodeSteps: 0,
       usm: true, usmAmount: 150,
       resize: false, longEdgeCm: 30, dpi: 300,
-      colorbalance: false,
+      colorbalance: false, colorMode: "RGBA",
     },
   },
   {
     id: "defringe_resize",
     name: "Khử viền + Resize 30cm",
     defaultPipeline: {
-      dust: true, dustThreshold: 5,
-      defringe: true, defringeRadius: 2,
-      choke: false, chokePx: 1.0,
+      dust: true, dustThreshold: 5, alphaCutoff: 22, edgeBoost: 45, floodFillBg: false, bgTolerance: 35,
+      defringe: true, defringeRadius: 2, dehalo: 60,
+      choke: false, chokePx: 1.0, erodeSteps: 0,
       usm: false, usmAmount: 120,
       resize: true, longEdgeCm: 30, dpi: 300,
-      colorbalance: false,
+      colorbalance: false, colorMode: "RGBA",
     },
   },
   {
     id: "defringe_choke",
     name: "Defringe + Choke 1px",
     defaultPipeline: {
-      dust: true, dustThreshold: 5,
-      defringe: true, defringeRadius: 2,
-      choke: true, chokePx: 1.0,
+      dust: true, dustThreshold: 5, alphaCutoff: 22, edgeBoost: 45, floodFillBg: false, bgTolerance: 35,
+      defringe: true, defringeRadius: 2, dehalo: 60,
+      choke: true, chokePx: 1.0, erodeSteps: 1,
       usm: false, usmAmount: 120,
       resize: false, longEdgeCm: 30, dpi: 300,
-      colorbalance: false,
+      colorbalance: false, colorMode: "RGBA",
     },
   },
 ];
 
 const PIPELINE_STEP_DEFS = [
-  { key: "dust", num: 1, name: "Dọn rác Alpha", controls: [{ label: "Ngưỡng bụi", field: "dustThreshold", min: 1, max: 50, step: 1, unit: "px", type: "range" }] },
-  { key: "defringe", num: 2, name: "Khử viền (Defringe)", controls: [{ label: "Bán kính", field: "defringeRadius", min: 1, max: 8, step: 1, unit: "px", type: "range" }] },
-  { key: "choke", num: 3, name: "Co viền bế (Choke)", controls: [{ label: "Độ co", field: "chokePx", min: 0.5, max: 5, step: 0.5, unit: "px", type: "range" }] },
+  {
+    key: "dust", num: 1, name: "Dọn rác & Làm sạch viền Alpha", controls: [
+      { label: "Cắt mờ (C)", field: "alphaCutoff", min: 0, max: 150, step: 1, unit: "", type: "range" },
+      { label: "Làm rõ viền", field: "edgeBoost", min: 0, max: 95, step: 5, unit: "%", type: "range" },
+      { label: "Ngưỡng bụi", field: "dustThreshold", min: 1, max: 50, step: 1, unit: "px", type: "range" },
+      { label: "Tách nền 4 góc", field: "floodFillBg", type: "checkbox" },
+      { label: "Dung sai nền (T)", field: "bgTolerance", min: 5, max: 100, step: 1, unit: "", type: "range", showIf: "floodFillBg" },
+    ]
+  },
+  {
+    key: "defringe", num: 2, name: "Khử viền ám màu (Dehalo 5×5)", controls: [
+      { label: "Khử ám màu", field: "dehalo", min: 0, max: 100, step: 5, unit: "%", type: "range" },
+      { label: "Bán kính", field: "defringeRadius", min: 1, max: 8, step: 1, unit: "px", type: "range" },
+    ]
+  },
+  {
+    key: "choke", num: 3, name: "Co viền bế (Choke / Erode 3×3)", controls: [
+      {
+        label: "Co mép (S)", field: "erodeSteps", type: "select_custom", options: [
+          { value: 0, label: "0 bước (Tắt)" },
+          { value: 1, label: "1 bước (3×3)" },
+          { value: 2, label: "2 bước (3×3)" },
+        ]
+      },
+      { label: "Độ co", field: "chokePx", min: 0.5, max: 5, step: 0.5, unit: "px", type: "range" },
+    ]
+  },
   { key: "usm", num: 4, name: "Tăng nét in (USM)", controls: [{ label: "Cường độ", field: "usmAmount", min: 50, max: 300, step: 10, unit: "%", type: "range" }] },
   {
     key: "resize", num: 5, name: "Đổi cỡ & 300 DPI", controls: [
@@ -171,8 +222,205 @@ const PIPELINE_STEP_DEFS = [
       { label: "Mật độ", field: "dpi", type: "select", options: [150, 300, 600] },
     ]
   },
-  { key: "colorbalance", num: 6, name: "Cân màu / Đen trắng", controls: [] },
+  {
+    key: "colorbalance", num: 6, name: "Hệ màu & Cân màu / Đen trắng", alwaysShowControls: true, controls: [
+      {
+        label: "Hệ màu đích", field: "colorMode", type: "select_str", options: [
+          { value: "RGBA", label: "RGBA (PNG 32-bit Alpha)" },
+          { value: "CMYK", label: "CMYK (Gamut + Alpha PNG)" },
+          { value: "CMYK_TIFF", label: "CMYK TIFF (300 DPI RIP)" },
+        ]
+      },
+    ]
+  },
 ];
+
+function getDpiAndColorText(dpi = 300, colorMode = "RGBA") {
+  const mode = String(colorMode || "RGBA").toUpperCase();
+  if (mode === "CMYK_TIFF") return `${dpi || 300} DPI • CMYK TIFF`;
+  if (mode === "CMYK") return `${dpi || 300} DPI • CMYK`;
+  return `${dpi || 300} DPI • RGBA`;
+}
+
+function getTargetColorModeDescription(colorMode = "RGBA") {
+  const mode = String(colorMode || "RGBA").toUpperCase();
+  if (mode === "CMYK_TIFF") return "CMYK (TIFF 300 DPI Chuẩn RIP)";
+  if (mode === "CMYK") return "CMYK (U.S. Web Coated SWOP v2 + Alpha)";
+  return "RGBA (32-bit Alpha)";
+}
+
+/**
+ * Thực thi Thuật toán Làm sạch nền & viền 4 giai đoạn + Tách nền phẳng 4 góc + Hệ màu CMYK trên Canvas Client
+ */
+function runClientCleanEdgeAndColorMode(srcUrl, pipelineOpts) {
+  return new Promise((resolve) => {
+    if (!srcUrl) return resolve(null);
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      try {
+        const w = Math.min(img.naturalWidth || 512, 1024);
+        const h = Math.min(img.naturalHeight || 512, 1024);
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, w, h);
+        const imageData = ctx.getImageData(0, 0, w, h);
+        const d = imageData.data; // [R, G, B, A]
+        const total = w * h;
+
+        // 0. Tách nền phẳng từ 4 góc bằng Flood Fill nếu bật floodFillBg
+        if (pipelineOpts.floodFillBg && w >= 2 && h >= 2) {
+          const tol = Math.max(5, Math.min(100, Number(pipelineOpts.bgTolerance ?? 35)));
+          const cCoords = [0, (w - 1) * 4, (h - 1) * w * 4, ((h - 1) * w + (w - 1)) * 4];
+          let bgR = 0, bgG = 0, bgB = 0;
+          for (const ci of cCoords) {
+            bgR += d[ci]; bgG += d[ci + 1]; bgB += d[ci + 2];
+          }
+          bgR /= 4; bgG /= 4; bgB /= 4;
+
+          const visited = new Uint8Array(total);
+          const q = [0, w - 1, (h - 1) * w, (h - 1) * w + (w - 1)];
+          for (const idx of q) visited[idx] = 1;
+
+          while (q.length > 0) {
+            const curr = q.pop();
+            const p4 = curr * 4;
+            const dist = Math.max(
+              Math.abs(d[p4] - bgR),
+              Math.abs(d[p4 + 1] - bgG),
+              Math.abs(d[p4 + 2] - bgB)
+            );
+            if (dist <= tol) {
+              d[p4 + 3] = 0;
+              const cx = curr % w;
+              const cy = (curr - cx) / w;
+              if (cx > 0 && !visited[curr - 1]) { visited[curr - 1] = 1; q.push(curr - 1); }
+              if (cx < w - 1 && !visited[curr + 1]) { visited[curr + 1] = 1; q.push(curr + 1); }
+              if (cy > 0 && !visited[curr - w]) { visited[curr - w] = 1; q.push(curr - w); }
+              if (cy < h - 1 && !visited[curr + w]) { visited[curr + w] = 1; q.push(curr + w); }
+            }
+          }
+        }
+
+        // Giai đoạn 1 & 2: Cắt ngưỡng mờ & Tăng độ dốc viền phi tuyến
+        const cutoff = Math.max(0, Math.min(254, Number(pipelineOpts.alphaCutoff ?? 22)));
+        const boost = Math.max(0, Math.min(0.95, Number(pipelineOpts.edgeBoost ?? 45) / 100));
+        const power = 1.0 - 0.68 * boost;
+        const denom = Math.max(1, 255 - cutoff);
+
+        for (let i = 0; i < d.length; i += 4) {
+          const a0 = d[i + 3];
+          let a1 = a0 <= cutoff ? 0 : Math.min(255, Math.round(((a0 - cutoff) / denom) * 255));
+          let a2 = a1 > 0 && boost > 0
+            ? Math.min(255, Math.round(Math.pow(a1 / 255, power) * 255))
+            : a1;
+          d[i + 3] = a2;
+          if (a2 === 0) {
+            d[i] = 0; d[i + 1] = 0; d[i + 2] = 0;
+          }
+        }
+
+        // Giai đoạn 3: Khử ám màu rìa bằng tìm kiếm lân cận 5x5
+        const halo = Math.max(0, Math.min(1.0, Number(pipelineOpts.dehalo ?? 60) / 100));
+        if (halo > 0 && pipelineOpts.defringe) {
+          const orig = new Uint8ClampedArray(d);
+          for (let y = 0; y < h; y++) {
+            for (let x = 0; x < w; x++) {
+              const idx4 = (y * w + x) * 4;
+              const a = orig[idx4 + 3];
+              if (a < 5 || a > 220) continue;
+              let bestR = orig[idx4], bestG = orig[idx4 + 1], bestB = orig[idx4 + 2], bestA = a;
+              for (let dy = -2; dy <= 2; dy++) {
+                const ny = y + dy;
+                if (ny < 0 || ny >= h) continue;
+                for (let dx = -2; dx <= 2; dx++) {
+                  const nx = x + dx;
+                  if (nx < 0 || nx >= w) continue;
+                  const nIdx4 = (ny * w + nx) * 4;
+                  const na = orig[nIdx4 + 3];
+                  if (na > bestA && na > 150) {
+                    bestA = na;
+                    bestR = orig[nIdx4];
+                    bestG = orig[nIdx4 + 1];
+                    bestB = orig[nIdx4 + 2];
+                  }
+                }
+              }
+              if (bestA > a) {
+                const mix = halo * (1 - a / 320) * 0.68;
+                d[idx4] = Math.round(orig[idx4] * (1 - mix) + bestR * mix);
+                d[idx4 + 1] = Math.round(orig[idx4 + 1] * (1 - mix) + bestG * mix);
+                d[idx4 + 2] = Math.round(orig[idx4 + 2] * (1 - mix) + bestB * mix);
+              }
+            }
+          }
+        }
+
+        // Giai đoạn 4: Co mép hình thái học 3x3 (Erosion)
+        const erodeSteps = Math.max(0, Math.min(2, Number(pipelineOpts.erodeSteps ?? 0)));
+        for (let step = 0; step < erodeSteps; step++) {
+          const prevAlpha = new Uint8Array(total);
+          for (let p = 0; p < total; p++) prevAlpha[p] = d[p * 4 + 3];
+          for (let y = 1; y < h - 1; y++) {
+            for (let x = 1; x < w - 1; x++) {
+              const p = y * w + x;
+              if (prevAlpha[p] === 0) continue;
+              let minNeighbor = 255;
+              for (let dy = -1; dy <= 1; dy++) {
+                for (let dx = -1; dx <= 1; dx++) {
+                  if (dx === 0 && dy === 0) continue;
+                  const na = prevAlpha[(y + dy) * w + (x + dx)];
+                  if (na < minNeighbor) minNeighbor = na;
+                }
+              }
+              if (minNeighbor < prevAlpha[p]) {
+                const newA = Math.round(prevAlpha[p] * 0.25 + minNeighbor * 0.75);
+                const idx4 = p * 4;
+                d[idx4 + 3] = newA;
+                if (newA === 0) {
+                  d[idx4] = 0; d[idx4 + 1] = 0; d[idx4 + 2] = 0;
+                }
+              }
+            }
+          }
+        }
+
+        // Chuyển trắng đen giữ Alpha hoặc giả lập không gian màu CMYK (k_pullback = 0.85)
+        const isCmyk = String(pipelineOpts.colorMode || "RGBA").toUpperCase().startsWith("CMYK");
+        for (let i = 0; i < d.length; i += 4) {
+          if (d[i + 3] === 0) continue;
+          let r = d[i], g = d[i + 1], b = d[i + 2];
+          if (pipelineOpts.colorbalance) {
+            const lum = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
+            d[i] = lum; d[i + 1] = lum; d[i + 2] = lum;
+          } else if (isCmyk) {
+            const rn = r / 255, gn = g / 255, bn = b / 255;
+            const c0 = 1 - rn, m0 = 1 - gn, y0 = 1 - bn;
+            const kMin = Math.min(c0, m0, y0);
+            const k = kMin * 0.85;
+            const denomK = 1 - k < 1e-6 ? 1.0 : 1 - k;
+            const c = Math.max(0, Math.min(1, (c0 - k) / denomK));
+            const m = Math.max(0, Math.min(1, (m0 - k) / denomK));
+            const y = Math.max(0, Math.min(1, (y0 - k) / denomK));
+            // Nén nhẹ dải màu rực ngoài gamut sRGB -> CMYK SWOP v2 để mô phỏng trung thực trên màn hình
+            d[i] = Math.round(255 * (1 - c * 0.94) * (1 - k));
+            d[i + 1] = Math.round(255 * (1 - m * 0.94) * (1 - k));
+            d[i + 2] = Math.round(255 * (1 - y * 0.94) * (1 - k));
+          }
+        }
+
+        ctx.putImageData(imageData, 0, 0);
+        resolve(canvas.toDataURL("image/png"));
+      } catch (_) {
+        resolve(srcUrl);
+      }
+    };
+    img.onerror = () => resolve(srcUrl);
+    img.src = srcUrl;
+  });
+}
 
 function isPipelineCustomizedForPreset(presetId, currentPipeline) {
   const presetObj = PRESET_OPTIONS.find(p => p.id === presetId) || PRESET_OPTIONS[0];
@@ -182,9 +430,20 @@ function isPipelineCustomizedForPreset(presetId, currentPipeline) {
   for (const k of toggleKeys) {
     if (Boolean(currentPipeline[k]) !== Boolean(def[k])) return true;
   }
-  if (currentPipeline.dust && Number(currentPipeline.dustThreshold) !== Number(def.dustThreshold)) return true;
-  if (currentPipeline.defringe && Number(currentPipeline.defringeRadius) !== Number(def.defringeRadius)) return true;
-  if (currentPipeline.choke && Number(currentPipeline.chokePx) !== Number(def.chokePx)) return true;
+  if (currentPipeline.dust && (
+    Number(currentPipeline.dustThreshold) !== Number(def.dustThreshold) ||
+    Number(currentPipeline.alphaCutoff ?? 22) !== Number(def.alphaCutoff ?? 22) ||
+    Number(currentPipeline.edgeBoost ?? 45) !== Number(def.edgeBoost ?? 45) ||
+    Boolean(currentPipeline.floodFillBg) !== Boolean(def.floodFillBg)
+  )) return true;
+  if (currentPipeline.defringe && (
+    Number(currentPipeline.defringeRadius) !== Number(def.defringeRadius) ||
+    Number(currentPipeline.dehalo ?? 60) !== Number(def.dehalo ?? 60)
+  )) return true;
+  if (currentPipeline.choke && (
+    Number(currentPipeline.chokePx) !== Number(def.chokePx) ||
+    Number(currentPipeline.erodeSteps ?? 0) !== Number(def.erodeSteps ?? 0)
+  )) return true;
   if (currentPipeline.usm && Number(currentPipeline.usmAmount) !== Number(def.usmAmount)) return true;
   if (currentPipeline.resize && (Number(currentPipeline.longEdgeCm) !== Number(def.longEdgeCm) || Number(currentPipeline.dpi) !== Number(def.dpi))) return true;
   return false;
@@ -197,12 +456,12 @@ function getSynchronizedPipelineName(presetId, currentPipeline) {
 }
 
 const SAMPLE_QUEUE_ITEMS = [
-  { id: "file-01", name: "Skull_Cyber_Print_01.png", previewUrl: createDemoSvg("skull", "#06b6d4", "#6366f1", "SKULL"), processedUrl: null, status: "waiting", subText: "Ảnh mẫu thử nghiệm • Sẵn sàng", dimensions: "2048 × 2048", width: 2048, height: 2048, dpiText: "300 DPI CMYK", sizeText: "18.4 MB", renderTime: null, alphaClean: 100.0, removedDust: 0, isDemo: true },
-  { id: "file-02", name: "Tiger_Retro_DTF_Print.png", previewUrl: createDemoSvg("tiger", "#f59e0b", "#ef4444", "TIGER"), processedUrl: null, status: "waiting", subText: "Ảnh mẫu thử nghiệm • Sẵn sàng", dimensions: "3500 × 4200", width: 3500, height: 4200, dpiText: "300 DPI CMYK RGBA", sizeText: "32.1 MB", renderTime: null, alphaClean: 100.0, removedDust: 142, isDemo: true },
-  { id: "file-03", name: "Waves_Japanese_Aesthetic.png", previewUrl: createDemoSvg("wave", "#3b82f6", "#10b981", "WAVE"), processedUrl: null, status: "waiting", subText: "Ảnh mẫu thử nghiệm • Sẵn sàng", dimensions: "2400 × 2400", width: 2400, height: 2400, dpiText: "300 DPI CMYK RGBA", sizeText: "12.8 MB", renderTime: null, alphaClean: 100.0, removedDust: 87, isDemo: true },
-  { id: "file-04", name: "Chibi_Mascot_Sticker_Set.png", previewUrl: createDemoSvg("chibi", "#ec4899", "#8b5cf6", "CHIBI"), processedUrl: null, status: "waiting", subText: "Ảnh mẫu thử nghiệm • Sẵn sàng", dimensions: "4096 × 4096", width: 4096, height: 4096, dpiText: "300 DPI CMYK RGBA", sizeText: "44.6 MB", renderTime: null, alphaClean: 100.0, removedDust: 203, isDemo: true },
-  { id: "file-05", name: "Streetwear_Typography_09.png", previewUrl: createDemoSvg("text", "#64748b", "#94a3b8", "STREET"), processedUrl: null, status: "waiting", subText: "Đang chờ luồng trống...", dimensions: "1800 × 3600", width: 1800, height: 3600, dpiText: "Tự động nhận diện", sizeText: "15.2 MB", renderTime: null, alphaClean: 98.4, removedDust: 0, isDemo: true },
-  { id: "file-06", name: "Botanical_Floral_Linework.png", previewUrl: createDemoSvg("text", "#10b981", "#059669", "FLORAL"), processedUrl: null, status: "waiting", subText: "Đang chờ luồng trống...", dimensions: "3000 × 3000", width: 3000, height: 3000, dpiText: "Tự động nhận diện", sizeText: "21.5 MB", renderTime: null, alphaClean: 97.8, removedDust: 0, isDemo: true },
+  { id: "file-01", name: "Skull_Cyber_Print_01.png", previewUrl: createDemoSvg("skull", "#06b6d4", "#6366f1", "SKULL"), processedUrl: null, status: "waiting", subText: "Ảnh mẫu thử nghiệm • Sẵn sàng", dimensions: "2048 × 2048", width: 2048, height: 2048, dpiText: "300 DPI • RGBA", sizeText: "18.4 MB", renderTime: null, alphaClean: 100.0, removedDust: 0, isDemo: true },
+  { id: "file-02", name: "Tiger_Retro_DTF_Print.png", previewUrl: createDemoSvg("tiger", "#f59e0b", "#ef4444", "TIGER"), processedUrl: null, status: "waiting", subText: "Ảnh mẫu thử nghiệm • Sẵn sàng", dimensions: "3500 × 4200", width: 3500, height: 4200, dpiText: "300 DPI • RGBA", sizeText: "32.1 MB", renderTime: null, alphaClean: 100.0, removedDust: 142, isDemo: true },
+  { id: "file-03", name: "Waves_Japanese_Aesthetic.png", previewUrl: createDemoSvg("wave", "#3b82f6", "#10b981", "WAVE"), processedUrl: null, status: "waiting", subText: "Ảnh mẫu thử nghiệm • Sẵn sàng", dimensions: "2400 × 2400", width: 2400, height: 2400, dpiText: "300 DPI • RGBA", sizeText: "12.8 MB", renderTime: null, alphaClean: 100.0, removedDust: 87, isDemo: true },
+  { id: "file-04", name: "Chibi_Mascot_Sticker_Set.png", previewUrl: createDemoSvg("chibi", "#ec4899", "#8b5cf6", "CHIBI"), processedUrl: null, status: "waiting", subText: "Ảnh mẫu thử nghiệm • Sẵn sàng", dimensions: "4096 × 4096", width: 4096, height: 4096, dpiText: "300 DPI • RGBA", sizeText: "44.6 MB", renderTime: null, alphaClean: 100.0, removedDust: 203, isDemo: true },
+  { id: "file-05", name: "Streetwear_Typography_09.png", previewUrl: createDemoSvg("text", "#64748b", "#94a3b8", "STREET"), processedUrl: null, status: "waiting", subText: "Đang chờ luồng trống...", dimensions: "1800 × 3600", width: 1800, height: 3600, dpiText: "300 DPI • RGBA", sizeText: "15.2 MB", renderTime: null, alphaClean: 98.4, removedDust: 0, isDemo: true },
+  { id: "file-06", name: "Botanical_Floral_Linework.png", previewUrl: createDemoSvg("text", "#10b981", "#059669", "FLORAL"), processedUrl: null, status: "waiting", subText: "Đang chờ luồng trống...", dimensions: "3000 × 3000", width: 3000, height: 3000, dpiText: "300 DPI • RGBA", sizeText: "21.5 MB", renderTime: null, alphaClean: 97.8, removedDust: 0, isDemo: true },
 ];
 
 const BG_OPTIONS = [
@@ -325,54 +584,63 @@ export default function BatchProcessPage({ isActive = true }) {
                 ...syncedPipeline,
                 dust: cfg.dust !== undefined ? cfg.dust : syncedPipeline.dust,
                 dustThreshold: cfg.dustThreshold ?? syncedPipeline.dustThreshold,
+                alphaCutoff: cfg.alphaCutoff ?? cfg.alpha_cutoff ?? syncedPipeline.alphaCutoff ?? 22,
+                edgeBoost: cfg.edgeBoost ?? cfg.edge_boost ?? syncedPipeline.edgeBoost ?? 45,
+                floodFillBg: cfg.floodFillBg ?? cfg.flood_fill_bg ?? syncedPipeline.floodFillBg ?? false,
+                bgTolerance: cfg.bgTolerance ?? cfg.bg_tolerance ?? syncedPipeline.bgTolerance ?? 35,
                 defringe: cfg.defringe !== undefined ? cfg.defringe : syncedPipeline.defringe,
                 defringeRadius: cfg.defringeRadius ?? syncedPipeline.defringeRadius,
+                dehalo: cfg.dehalo ?? syncedPipeline.dehalo ?? 60,
                 choke: cfg.choke !== undefined ? cfg.choke : syncedPipeline.choke,
                 chokePx: cfg.chokePx ?? cfg.choke_px ?? syncedPipeline.chokePx,
+                erodeSteps: cfg.erodeSteps ?? cfg.erode_steps ?? syncedPipeline.erodeSteps ?? 0,
                 usm: cfg.usm !== undefined ? cfg.usm : syncedPipeline.usm,
                 usmAmount: cfg.usmAmount ?? syncedPipeline.usmAmount,
                 resize: cfg.resize !== undefined ? cfg.resize : syncedPipeline.resize,
                 longEdgeCm: cfg.longEdgeCm ?? syncedPipeline.longEdgeCm,
                 dpi: cfg.dpi ?? syncedPipeline.dpi,
                 colorbalance: cfg.colorbalance !== undefined ? cfg.colorbalance : syncedPipeline.colorbalance,
+                colorMode: cfg.colorMode || cfg.color_mode || syncedPipeline.colorMode || "RGBA",
               };
               setPipeline(syncedPipeline);
             } catch (_) { }
           }
         }
         const syncedLabel = getSynchronizedPipelineName(syncedPreset, syncedPipeline);
+        const syncedDpiColor = getDpiAndColorText(syncedPipeline.dpi, syncedPipeline.colorMode);
 
         if (Array.isArray(data.items) && data.items.length > 0) {
           const recoveredQueue = data.items.map((r) => {
             const w = r.orig_width || 0;
             const h = r.orig_height || 0;
-            const sizeMB = r.orig_size_bytes ? (r.orig_size_bytes / (1024 * 1024)).toFixed(1) + " MB" : "—";
-            const st = r.status === "completed" ? "done" : r.status === "error" ? "error" : "waiting";
-            const rTime = r.render_time_ms ? r.render_time_ms / 1000 : null;
+            const rawBytes = r.file_size_bytes || r.orig_size_bytes || 0;
+            const sizeMB = rawBytes > 0 ? (rawBytes / (1024 * 1024)).toFixed(1) + " MB" : "—";
+            const st = r.status === "completed" ? "done" : "waiting";
+            const procMs = r.process_time_ms || r.render_time_ms || 0;
+            const rTime = procMs > 0 ? procMs / 1000 : null;
+            const fname = r.file_name || r.filename || `file_${r.id}.png`;
             return {
               id: `db-item-${r.id}`,
               dbId: r.id,
-              name: r.filename,
+              name: fname,
               originalFile: null,
               inputPath: r.input_path,
               outputPath: r.output_path,
               previewUrl: `${LOCAL_API_BASE}/api/inspector/preview?file_id=${r.id}&mode=original`,
-              processedUrl: st === "done" ? `${LOCAL_API_BASE}/api/inspector/preview?file_id=${r.id}&mode=normal&t=${r.render_time_ms || 1}` : null,
+              processedUrl: st === "done" ? `${LOCAL_API_BASE}/api/inspector/preview?file_id=${r.id}&mode=normal&t=${procMs || 1}` : null,
               status: st,
               subText: st === "done"
                 ? `${(rTime || 0.24).toFixed(2)}s render • SQLite`
-                : st === "error"
-                  ? (r.error_message || "Lỗi xử lý")
-                  : "Khôi phục từ SQLite Queue...",
+                : "Khôi phục từ SQLite Queue...",
               dimensions: w > 0 && h > 0 ? `${w} × ${h}` : "Tự động nhận diện",
               width: w,
               height: h,
-              dpiText: "300 DPI CMYK RGBA",
+              dpiText: syncedDpiColor,
               sizeText: sizeMB,
               pipelineText: syncedLabel,
               renderTime: rTime,
               alphaClean: r.alpha_clean_pct ?? 100.0,
-              removedDust: r.removed_dust_blobs ?? 0,
+              removedDust: r.removed_dust_count ?? r.removed_dust_blobs ?? 0,
               isDemo: false,
             };
           });
@@ -400,14 +668,15 @@ export default function BatchProcessPage({ isActive = true }) {
     } catch (_) { }
   }, [exportPath, workerThreads, autoOpenFolder, preset, pipeline]);
 
-  // Đồng bộ tức thì cột PIPELINE ƯU TIÊN của các file trong hàng đợi khi đổi Chế độ xử lý hoặc bật/tắt công tắc Pipeline
+  // Đồng bộ tức thì cột PIPELINE ƯU TIÊN & ĐỘ PHÂN GIẢI (DPI + Hệ màu) của các file trong hàng đợi
   useEffect(() => {
+    const dpiColorStr = getDpiAndColorText(pipeline.dpi, pipeline.colorMode);
     setQueue(prev => prev.map(item => (
       item.status !== "processing"
-        ? { ...item, pipelineText: currentPipelineLabel }
+        ? { ...item, pipelineText: currentPipelineLabel, dpiText: dpiColorStr }
         : item
     )));
-  }, [currentPipelineLabel]);
+  }, [currentPipelineLabel, pipeline.dpi, pipeline.colorMode]);
 
   // HW Monitoring & Kiểm tra trạng thái kết nối FastAPI Backend thời gian thực
   useEffect(() => {
@@ -562,7 +831,15 @@ export default function BatchProcessPage({ isActive = true }) {
     setPreset(newPresetId);
     const targetPreset = PRESET_OPTIONS.find(p => p.id === newPresetId);
     if (targetPreset && targetPreset.defaultPipeline) {
-      setPipeline({ ...targetPreset.defaultPipeline });
+      setPipeline(prev => ({ ...targetPreset.defaultPipeline, colorMode: prev.colorMode || "RGBA" }));
+    }
+    if (!isRunning) {
+      setQueue(prev => prev.map(item => (
+        item.status === "error"
+          ? { ...item, status: "waiting", subText: "Đang chờ luồng trống..." }
+          : item
+      )));
+      if (activeTab === "error") setActiveTab("all");
     }
   };
 
@@ -570,7 +847,7 @@ export default function BatchProcessPage({ isActive = true }) {
   const handleResetPipelineToPreset = () => {
     const targetPreset = PRESET_OPTIONS.find(p => p.id === preset) || PRESET_OPTIONS[0];
     if (targetPreset && targetPreset.defaultPipeline) {
-      setPipeline({ ...targetPreset.defaultPipeline });
+      setPipeline(prev => ({ ...targetPreset.defaultPipeline, colorMode: prev.colorMode || "RGBA" }));
     }
   };
 
@@ -609,6 +886,7 @@ export default function BatchProcessPage({ isActive = true }) {
     if (rawFiles.length === 0) return;
     const batchTs = Date.now();
     const activeLabel = getSynchronizedPipelineName(preset, pipeline);
+    const activeDpiColor = getDpiAndColorText(pipeline.dpi, pipeline.colorMode);
     const newItems = rawFiles.map((file, idx) => {
       const url = URL.createObjectURL(file);
       const sizeMB = (file.size / (1024 * 1024)).toFixed(1) + " MB";
@@ -617,7 +895,7 @@ export default function BatchProcessPage({ isActive = true }) {
         id: itemId, dbId: null, name: file.name, originalFile: file,
         previewUrl: url, processedUrl: null, status: "waiting",
         subText: "Đang chờ luồng trống...", dimensions: "Đang tính...",
-        width: 0, height: 0, dpiText: `${pipeline.dpi || 300} DPI CMYK RGBA`,
+        width: 0, height: 0, dpiText: activeDpiColor,
         sizeText: sizeMB, pipelineText: activeLabel,
         renderTime: null, alphaClean: 100.0, removedDust: 0, isDemo: false,
       };
@@ -673,9 +951,11 @@ export default function BatchProcessPage({ isActive = true }) {
   const handleLoadSampleData = () => {
     if (isRunning) return;
     const activeLabel = getSynchronizedPipelineName(preset, pipeline);
+    const activeDpiColor = getDpiAndColorText(pipeline.dpi, pipeline.colorMode);
     const clonedSamples = SAMPLE_QUEUE_ITEMS.map(item => ({
       ...item,
       pipelineText: activeLabel,
+      dpiText: activeDpiColor,
     }));
     setQueue(clonedSamples);
     setSelectedId(clonedSamples[0]?.id || null);
@@ -711,7 +991,8 @@ export default function BatchProcessPage({ isActive = true }) {
   const processSingleItem = async (item) => {
     const t0 = performance.now();
     const activeTag = getSynchronizedPipelineName(preset, pipeline);
-    setQueue(prev => prev.map(q => q.id === item.id ? { ...q, status: "processing", subText: "Pass 1: BGRA Matrix Processing...", pipelineText: activeTag } : q));
+    const activeDpiColor = getDpiAndColorText(pipeline.dpi, pipeline.colorMode);
+    setQueue(prev => prev.map(q => q.id === item.id ? { ...q, status: "processing", subText: "Pass 1: BGRA Matrix Processing...", pipelineText: activeTag, dpiText: activeDpiColor } : q));
     let processedUrl = item.processedUrl;
     let renderTimeSec = 0.24;
     let alphaCleanVal = 100.0;
@@ -730,16 +1011,24 @@ export default function BatchProcessPage({ isActive = true }) {
         formData.append("preset", preset);
         formData.append("dust_enabled", String(Boolean(pipeline.dust)));
         formData.append("dust_threshold", String(pipeline.dustThreshold ?? 5));
+        formData.append("alpha_cutoff", String(pipeline.alphaCutoff ?? 22));
+        formData.append("edge_boost", String(pipeline.edgeBoost ?? 45));
+        formData.append("flood_fill_bg", String(Boolean(pipeline.floodFillBg)));
+        formData.append("bg_tolerance", String(pipeline.bgTolerance ?? 35));
+        formData.append("force_flood_fill", "false");
         formData.append("defringe_enabled", String(Boolean(pipeline.defringe)));
         formData.append("defringe_radius", String(pipeline.defringeRadius ?? 2));
+        formData.append("dehalo", String(pipeline.dehalo ?? 60));
         formData.append("choke_enabled", String(Boolean(pipeline.choke)));
         formData.append("choke_px", String(pipeline.chokePx ?? 1.5));
+        formData.append("erode_steps", String(pipeline.erodeSteps ?? 0));
         formData.append("usm_enabled", String(Boolean(pipeline.usm)));
         formData.append("usm_amount", String(pipeline.usmAmount ?? 120));
         formData.append("resize_enabled", String(Boolean(pipeline.resize)));
         formData.append("long_edge_cm", String(pipeline.longEdgeCm ?? 30));
         formData.append("dpi", String(pipeline.dpi ?? 300));
         formData.append("colorbalance", String(Boolean(pipeline.colorbalance)));
+        formData.append("color_mode", String(pipeline.colorMode || "RGBA"));
         formData.append("export_dir", exportPath || "");
         formData.append("item_db_id", String(item.dbId || 0));
 
@@ -780,7 +1069,7 @@ export default function BatchProcessPage({ isActive = true }) {
             if (errJson?.error) errMsg = errJson.error;
           } catch (_) { }
           setQueue(prev => prev.map(q => q.id === item.id ? {
-            ...q, status: "error", subText: errMsg, pipelineText: activeTag,
+            ...q, status: "error", subText: errMsg, pipelineText: activeTag, dpiText: activeDpiColor,
           } : q));
           return;
         }
@@ -789,14 +1078,15 @@ export default function BatchProcessPage({ isActive = true }) {
         setApiConnected(false);
         cancelRef.current = true;
         setQueue(prev => prev.map(q => q.id === item.id ? {
-          ...q, status: "error", subText: "Lỗi: Không kết nối được FastAPI Backend", pipelineText: activeTag,
+          ...q, status: "error", subText: "Lỗi: Không kết nối được FastAPI Backend", pipelineText: activeTag, dpiText: activeDpiColor,
         } : q));
         return;
       }
     } else {
-      await new Promise(r => setTimeout(r, 160 + Math.random() * 140));
+      await new Promise(r => setTimeout(r, 120 + Math.random() * 100));
+      const clientProcessed = await runClientCleanEdgeAndColorMode(item.previewUrl, pipeline);
       renderTimeSec = (performance.now() - t0) / 1000;
-      processedUrl = item.processedUrl || item.previewUrl;
+      processedUrl = clientProcessed || item.processedUrl || item.previewUrl;
       dustCount = item.removedDust || Math.floor(Math.random() * 200);
       if ((preset === "defringe_resize" || pipeline.resize) && outW > 0 && outH > 0) {
         const targetPx = Math.round(((pipeline.longEdgeCm || 30) / 2.54) * (pipeline.dpi || 300));
@@ -812,11 +1102,11 @@ export default function BatchProcessPage({ isActive = true }) {
         itemSubText = "Đạt chuẩn nét (Laplacian: 248.5)";
       }
     }
-    if (!itemSubText) itemSubText = `${renderTimeSec.toFixed(2)}s render • CUDA`;
+    if (!itemSubText) itemSubText = `${renderTimeSec.toFixed(2)}s render • ${String(pipeline.colorMode || "RGBA").toUpperCase()}`;
     setQueue(prev => prev.map(q => q.id === item.id ? {
       ...q, status: "done", processedUrl, renderTime: renderTimeSec,
       subText: itemSubText, dimensions: dimStr, width: outW, height: outH,
-      alphaClean: alphaCleanVal, removedDust: dustCount, pipelineText: activeTag,
+      alphaClean: alphaCleanVal, removedDust: dustCount, pipelineText: activeTag, dpiText: activeDpiColor,
     } : q));
   };
 
@@ -991,7 +1281,7 @@ export default function BatchProcessPage({ isActive = true }) {
 
                 <div className="batch-pipeline-steps" style={{ padding: "8px 10px", maxHeight: "62vh" }}>
                   {PIPELINE_STEP_DEFS.map(step => (
-                    <div key={step.key} className={`batch-step-row ${!pipeline[step.key] ? "disabled" : ""}`}>
+                    <div key={step.key} className={`batch-step-row ${!pipeline[step.key] && !step.alwaysShowControls ? "disabled" : ""}`}>
                       <div className="batch-step-header">
                         <button type="button" className="batch-toggle-btn" onClick={() => toggleStep(step.key)}>
                           {pipeline[step.key] ? <ToggleRight size={20} color="#10b981" /> : <ToggleLeft size={20} color="#6b7280" />}
@@ -999,50 +1289,81 @@ export default function BatchProcessPage({ isActive = true }) {
                         <span className="batch-step-num">{step.num}</span>
                         <span className="batch-step-name">{step.name}</span>
                       </div>
-                      {pipeline[step.key] && step.controls.length > 0 && (
+                      {(pipeline[step.key] || step.alwaysShowControls) && step.controls.length > 0 && (
                         <div className="batch-step-control">
-                          {step.controls.map(ctrl => (
-                            <div key={ctrl.field} className="batch-step-input-row">
-                              <label>{ctrl.label}</label>
-                              {ctrl.type === "range" && (
-                                <>
-                                  <input
-                                    type="range"
-                                    min={ctrl.min}
-                                    max={ctrl.max}
-                                    step={ctrl.step}
+                          {step.controls.map(ctrl => {
+                            if (ctrl.showIf && !pipeline[ctrl.showIf]) return null;
+                            return (
+                              <div key={ctrl.field} className="batch-step-input-row">
+                                <label>{ctrl.label}</label>
+                                {ctrl.type === "range" && (
+                                  <>
+                                    <input
+                                      type="range"
+                                      min={ctrl.min}
+                                      max={ctrl.max}
+                                      step={ctrl.step}
+                                      value={pipeline[ctrl.field]}
+                                      onChange={e => setStepVal(ctrl.field, +e.target.value)}
+                                      className="batch-slider"
+                                    />
+                                    <span className="batch-val-badge">{pipeline[ctrl.field]}{ctrl.unit ? ` ${ctrl.unit}` : ""}</span>
+                                  </>
+                                )}
+                                {ctrl.type === "number" && (
+                                  <>
+                                    <input
+                                      type="number"
+                                      min={ctrl.min}
+                                      max={ctrl.max}
+                                      step={ctrl.step}
+                                      value={pipeline[ctrl.field]}
+                                      onChange={e => setStepVal(ctrl.field, +e.target.value)}
+                                      className="batch-num-input"
+                                    />
+                                    <span className="batch-val-badge">{ctrl.unit}</span>
+                                  </>
+                                )}
+                                {ctrl.type === "checkbox" && (
+                                  <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: "0.72rem", color: "var(--text-primary)" }}>
+                                    <input
+                                      type="checkbox"
+                                      checked={Boolean(pipeline[ctrl.field])}
+                                      onChange={e => setStepVal(ctrl.field, e.target.checked)}
+                                    />
+                                    <span>{pipeline[ctrl.field] ? "Bật (Flood Fill 4 góc)" : "Tắt"}</span>
+                                  </label>
+                                )}
+                                {ctrl.type === "select" && (
+                                  <select
+                                    className="batch-dpi-select"
                                     value={pipeline[ctrl.field]}
                                     onChange={e => setStepVal(ctrl.field, +e.target.value)}
-                                    className="batch-slider"
-                                  />
-                                  <span className="batch-val-badge">{pipeline[ctrl.field]} {ctrl.unit}</span>
-                                </>
-                              )}
-                              {ctrl.type === "number" && (
-                                <>
-                                  <input
-                                    type="number"
-                                    min={ctrl.min}
-                                    max={ctrl.max}
-                                    step={ctrl.step}
+                                  >
+                                    {ctrl.options.map(o => <option key={o} value={o}>{o} DPI</option>)}
+                                  </select>
+                                )}
+                                {ctrl.type === "select_custom" && (
+                                  <select
+                                    className="batch-dpi-select"
                                     value={pipeline[ctrl.field]}
                                     onChange={e => setStepVal(ctrl.field, +e.target.value)}
-                                    className="batch-num-input"
-                                  />
-                                  <span className="batch-val-badge">{ctrl.unit}</span>
-                                </>
-                              )}
-                              {ctrl.type === "select" && (
-                                <select
-                                  className="batch-dpi-select"
-                                  value={pipeline[ctrl.field]}
-                                  onChange={e => setStepVal(ctrl.field, +e.target.value)}
-                                >
-                                  {ctrl.options.map(o => <option key={o} value={o}>{o} DPI</option>)}
-                                </select>
-                              )}
-                            </div>
-                          ))}
+                                  >
+                                    {ctrl.options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                                  </select>
+                                )}
+                                {ctrl.type === "select_str" && (
+                                  <select
+                                    className="batch-dpi-select"
+                                    value={pipeline[ctrl.field] || "RGBA"}
+                                    onChange={e => setStepVal(ctrl.field, e.target.value)}
+                                  >
+                                    {ctrl.options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                                  </select>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       )}
                     </div>
@@ -1050,6 +1371,24 @@ export default function BatchProcessPage({ isActive = true }) {
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Segmented Control chọn Hệ màu nhanh: [ RGBA | CMYK ] đồng bộ 2 chiều với Bước 6 */}
+          <div className="batch-colormode-segmented" title="Chuyển đổi hệ màu đích cho in ấn DTF (RGBA 32-bit hoặc CMYK Gamut-Matched)">
+            <button
+              type="button"
+              className={`batch-colormode-btn ${(pipeline.colorMode || "RGBA") === "RGBA" ? "active" : ""}`}
+              onClick={() => setStepVal("colorMode", "RGBA")}
+            >
+              RGBA
+            </button>
+            <button
+              type="button"
+              className={`batch-colormode-btn ${String(pipeline.colorMode || "").startsWith("CMYK") ? "active" : ""}`}
+              onClick={() => setStepVal("colorMode", "CMYK")}
+            >
+              CMYK
+            </button>
           </div>
 
           <button id="btn-clear-queue" className="batch-btn-action batch-btn-danger" onClick={handleClearQueue} disabled={isRunning || totalFiles === 0} title="Xóa danh sách hàng đợi">
@@ -1245,10 +1584,18 @@ export default function BatchProcessPage({ isActive = true }) {
           <div className="batch-preview-viewport" style={{ ...inspectorBgStyle, flex: "0 0 350px" }}>
             {selectedItem ? (
               <>
-                <img src={inspectorSrc || selectedItem.previewUrl} alt={selectedItem.name}
-                  className={`batch-preview-img ${isZoomed ? "zoomed" : ""}`} />
+                <img
+                  src={inspectorSrc || selectedItem.previewUrl}
+                  alt={selectedItem.name}
+                  className={`batch-preview-img ${isZoomed ? "zoomed" : ""}`}
+                  style={
+                    !isComparing && !xrayMode && String(pipeline.colorMode || "").startsWith("CMYK") && !selectedItem.processedUrl
+                      ? { filter: "saturate(0.88) contrast(0.96)" }
+                      : undefined
+                  }
+                />
                 <div className="batch-alpha-badge"><span className="batch-alpha-dot" />Alpha: {selectedItem.alphaClean}% Sạch</div>
-                <div className="batch-dim-badge"><Layers size={11} color="#818cf8" />{selectedItem.dimensions}</div>
+                <div className="batch-dim-badge"><Layers size={11} color="#818cf8" />{selectedItem.dimensions} • {pipeline.colorMode || "RGBA"}</div>
                 {isComparing && <div className="batch-compare-overlay"><span>Ảnh Gốc (Original)</span><span className="batch-compare-hint">Giữ [Space]</span></div>}
                 {xrayMode && <div className="batch-xray-overlay"><Crosshair size={10} />X-RAY — Đỏ = Pixel bán trong suốt</div>}
               </>
@@ -1267,6 +1614,7 @@ export default function BatchProcessPage({ isActive = true }) {
                 <div className="batch-prop-row"><span className="batch-prop-lbl">Kích thước (px):</span><span className="batch-prop-val highlight-blue">{selectedItem.dimensions}</span></div>
                 <div className="batch-prop-row"><span className="batch-prop-lbl">Kích thước thực:</span><span className="batch-prop-val highlight-blue">{getRealSizeCm(selectedItem) || "—"}</span></div>
                 <div className="batch-prop-row"><span className="batch-prop-lbl">Mật độ:</span><span className="batch-prop-val highlight-blue">{pipeline.dpi || 300} DPI</span></div>
+                <div className="batch-prop-row"><span className="batch-prop-lbl">Hệ màu đích:</span><span className="batch-prop-val highlight-purple">{getTargetColorModeDescription(pipeline.colorMode)}</span></div>
                 <div className="batch-prop-row"><span className="batch-prop-lbl">Chế độ ưu tiên:</span><span className="batch-prop-val highlight-purple" title={currentPipelineLabel}>{currentPipelineLabel}</span></div>
                 <div className="batch-prop-row"><span className="batch-prop-lbl">Dạng Alpha:</span><span className="batch-prop-val highlight-purple">{selectedItem.alphaClean}% sạch</span></div>
                 {selectedItem.sizeText && <div className="batch-prop-row"><span className="batch-prop-lbl">Dung lượng:</span><span className="batch-prop-val">{selectedItem.sizeText}</span></div>}
@@ -1288,7 +1636,7 @@ export default function BatchProcessPage({ isActive = true }) {
                 </div>
                 <div className="batch-inspector-actions">
                   <button className="batch-btn-download-inspector" onClick={() => handleDownloadItem(selectedItem)}>
-                    <Download size={14} /><span>Tải tệp này (PNG {pipeline.dpi || 300} DPI)</span>
+                    <Download size={14} /><span>Tải tệp này ({pipeline.colorMode === "CMYK_TIFF" ? "TIFF" : "PNG"} {pipeline.dpi || 300} DPI • {pipeline.colorMode === "CMYK_TIFF" ? "CMYK" : (pipeline.colorMode || "RGBA")})</span>
                   </button>
                 </div>
               </>

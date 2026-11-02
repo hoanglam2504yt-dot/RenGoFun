@@ -1083,22 +1083,253 @@ async def get_system_metrics():
         })
 
 
+def apply_cmyk_color_space(bgr_matrix: np.ndarray, k_pullback: float = 0.85) -> tuple:
+    """
+    Chuyển đổi ma trận BGR (uint8) sang không gian màu in ấn CMYK bằng NumPy Vectorization
+    theo đúng đặc tả thuat_toan_xu_ly_anh_page_batch.md.
+    Trả về:
+      - cmyk_uint8: Ma trận 4 kênh (C, M, Y, K) chuẩn để lưu file TIFF CMYK.
+      - cmyk_simulated_rgb: Ma trận RGB đã được ép về dải màu thực tế của mực in CMYK (để lưu PNG 32-bit có Alpha).
+    """
+    bgr_norm = bgr_matrix.astype(np.float32) / 255.0
+    B, G, R = bgr_norm[:, :, 0], bgr_norm[:, :, 1], bgr_norm[:, :, 2]
+
+    # Tính kênh K (Key / Black) với hệ số GCR (Gray Component Replacement)
+    K = 1.0 - np.maximum(np.maximum(R, G), B)
+    K_eff = K * k_pullback
+
+    # Tránh lỗi chia cho 0 tại các điểm đen tuyệt đối (K = 1)
+    denom = np.where((1.0 - K_eff) == 0, 1e-6, 1.0 - K_eff)
+
+    # Tính các kênh Cyan (C), Magenta (M), Yellow (Y)
+    C = np.clip((1.0 - R - K_eff) / denom, 0.0, 1.0)
+    M = np.clip((1.0 - G - K_eff) / denom, 0.0, 1.0)
+    Y = np.clip((1.0 - B - K_eff) / denom, 0.0, 1.0)
+
+    cmyk_uint8 = (np.dstack((C, M, Y, K)) * 255.0).clip(0, 255).astype(np.uint8)
+
+    # Nội suy ngược về không gian hiển thị (CMYK Gamut Clamping) để giữ kênh Alpha trên PNG
+    R_print = (1.0 - C * 0.92) * (1.0 - K * 0.95)
+    G_print = (1.0 - M * 0.90) * (1.0 - K * 0.95)
+    B_print = (1.0 - Y * 0.88) * (1.0 - K * 0.95)
+
+    cmyk_simulated_rgb = (np.dstack((R_print, G_print, B_print)) * 255.0).clip(0, 255).astype(np.uint8)
+    return cmyk_uint8, cmyk_simulated_rgb
+
+
+def save_for_print_with_color_mode(
+    bgr_matrix: np.ndarray,
+    alpha_channel: np.ndarray,
+    output_path: str,
+    color_mode: str = "RGBA",  # "RGBA" | "CMYK" | "CMYK_TIFF"
+    dpi: int = 300,
+) -> tuple:
+    """
+    Bước 8 trong Pipeline: Xuất ảnh theo chế độ màu người dùng lựa chọn (RGBA, CMYK, hoặc CMYK_TIFF),
+    bảo toàn 100% kênh Alpha và thông số 300 DPI.
+    Trả về: (actual_saved_path, preview_png_bytes)
+    """
+    mode_upper = (color_mode or "RGBA").upper().strip()
+    if mode_upper not in ("RGBA", "CMYK", "CMYK_TIFF"):
+        mode_upper = "RGBA"
+
+    # TRƯỜNG HỢP 1: Hệ màu RGBA tiêu chuẩn (Xuất PNG 32-bit giữ nguyên Alpha)
+    if mode_upper == "RGBA":
+        rgb_matrix = cv2.cvtColor(bgr_matrix, cv2.COLOR_BGR2RGB)
+        rgba_matrix = np.dstack((rgb_matrix, alpha_channel))
+        pil_img = Image.fromarray(rgba_matrix, mode="RGBA")
+        buf = io.BytesIO()
+        pil_img.save(buf, format="PNG", dpi=(dpi, dpi), compress_level=3)
+        png_bytes = buf.getvalue()
+        if output_path:
+            with open(output_path, "wb") as f_out:
+                f_out.write(png_bytes)
+        return output_path, png_bytes
+
+    # Tính toán ma trận màu CMYK
+    cmyk_matrix, cmyk_sim_rgb = apply_cmyk_color_space(bgr_matrix)
+    rgba_cmyk_matched = np.dstack((cmyk_sim_rgb, alpha_channel))
+    pil_preview = Image.fromarray(rgba_cmyk_matched, mode="RGBA")
+    buf_preview = io.BytesIO()
+    pil_preview.save(buf_preview, format="PNG", dpi=(dpi, dpi), compress_level=3)
+    preview_png_bytes = buf_preview.getvalue()
+
+    # TRƯỜNG HỢP 2: Hệ màu CMYK nhưng giữ nền trong suốt trên file PNG (Khuyên dùng cho DTF)
+    if mode_upper == "CMYK":
+        if output_path:
+            with open(output_path, "wb") as f_out:
+                f_out.write(preview_png_bytes)
+        return output_path, preview_png_bytes
+
+    # TRƯỜNG HỢP 3: Xuất file TIFF CMYK 4 kênh thực thụ (Dành cho RIP yêu cầu TIFF CMYK)
+    tiff_path = output_path.rsplit(".", 1)[0] + ".tif" if output_path and "." in output_path else (output_path + ".tif" if output_path else "")
+    alpha_factor = (alpha_channel.astype(np.float32) / 255.0)[:, :, np.newaxis]
+    cmyk_with_alpha_mask = (cmyk_matrix.astype(np.float32) * alpha_factor).clip(0, 255).astype(np.uint8)
+    pil_cmyk = Image.fromarray(cmyk_with_alpha_mask, mode="CMYK")
+    if tiff_path:
+        pil_cmyk.save(tiff_path, format="TIFF", dpi=(dpi, dpi), compression="tiff_lzw")
+    return tiff_path, preview_png_bytes
+
+
+def _algo_flood_fill_4corners(img: np.ndarray, tolerance: int = 35, force: bool = False) -> tuple:
+    """
+    Thuật toán bổ trợ: Tách nền phẳng từ 4 góc (theo thuat_toan_lam_sach_vien_anh.md Mục 3):
+    - Bước 1: Đếm tổng số điểm ảnh có alpha < 245. Nếu > 3% tổng số điểm ảnh (0.03 * N) và không force -> bỏ qua.
+    - Bước 2: Định tâm màu nền từ 4 góc khung ảnh: (0,0), (W-1,0), (0,H-1), (W-1,H-1).
+    - Bước 3: Khoảng cách Chebyshev max(|R - R_nen|, |G - G_nen|, |B - B_nen|) <= T (mặc định T = 35).
+    - Bước 4: Lan truyền theo chiều rộng 4 hướng (4-connected Flood Fill) từ 4 góc và gán alpha = 0.
+    Trả về: (result_bgra, already_transparent)
+    """
+    bgra = _ensure_bgra(img).copy()
+    h, w = bgra.shape[:2]
+    total_n = h * w
+    if total_n == 0:
+        return bgra, False
+
+    alpha = bgra[:, :, 3]
+    transparent_cnt = int(np.count_nonzero(alpha < 245))
+    already_transparent = transparent_cnt > (0.03 * total_n)
+    if already_transparent and not force:
+        return bgra, True
+
+    # Bước 2: Định tâm màu nền từ 4 góc khung ảnh (BGR)
+    c1 = bgra[0, 0, :3].astype(np.float32)
+    c2 = bgra[0, w - 1, :3].astype(np.float32)
+    c3 = bgra[h - 1, 0, :3].astype(np.float32)
+    c4 = bgra[h - 1, w - 1, :3].astype(np.float32)
+    bg_bgr = np.round((c1 + c2 + c3 + c4) / 4.0).astype(np.int16)
+
+    # Bước 3: Khoảng cách Chebyshev trên cả 3 kênh <= T
+    tol = max(0, min(255, int(tolerance)))
+    bgr_i16 = bgra[:, :, :3].astype(np.int16)
+    chebyshev_dist = np.max(np.abs(bgr_i16 - bg_bgr.reshape(1, 1, 3)), axis=2)
+    cand_mask = (chebyshev_dist <= tol).astype(np.uint8)
+
+    # Bước 4: Lan truyền 4 hướng (4-connected components nối thông với 4 góc)
+    num_labels, labels = cv2.connectedComponents(cand_mask, connectivity=4)
+    corner_labels = set()
+    for cy, cx in ((0, 0), (0, w - 1), (h - 1, 0), (h - 1, w - 1)):
+        if cand_mask[cy, cx] > 0 and labels[cy, cx] > 0:
+            corner_labels.add(int(labels[cy, cx]))
+
+    if corner_labels:
+        flood_mask = np.isin(labels, list(corner_labels))
+        bgra[flood_mask, 3] = 0
+
+    return bgra, already_transparent
+
+
+def _algo_clean_edge_4stage(
+    img: np.ndarray,
+    cutoff: int = 22,
+    boost: float = 0.45,
+    halo: float = 0.60,
+    erode_steps: int = 0,
+) -> np.ndarray:
+    """
+    Quy trình 4 giai đoạn của Thuật toán Làm sạch viền ảnh (theo thuat_toan_lam_sach_vien_anh.md Mục 2):
+      - Giai đoạn 1: Cắt bỏ điểm ảnh mờ (alpha <= C -> 0) và Tăng cường độ sắc nét viền qua hàm mũ p = 1 - 0.68 * B.
+      - Giai đoạn 2: Co mép hình thái học 3x3 trên kênh độ đục với S vòng lặp (S thuộc {0, 1, 2}).
+      - Giai đoạn 3: Khử viền ám màu bằng phương pháp nội suy lân cận 5x5 (tìm donor pixel có alpha_2 > 150 đặc nhất,
+        pha trộn theo trọng số thích ứng m = H_halo * (1 - alpha_2 / 320) * 0.68).
+      - Giai đoạn 4: Ghi nhận kênh độ đục alpha_2 vào kênh thứ 4 và kết xuất.
+    """
+    bgra = _ensure_bgra(img).copy()
+    h, w = bgra.shape[:2]
+    if h == 0 or w == 0:
+        return bgra
+
+    # Chuẩn hóa tham số đầu vào đúng miền xác định trong tài liệu
+    C = int(np.clip(cutoff, 0, 150))
+    B = float(boost) / 100.0 if float(boost) > 1.0 else float(boost)
+    B = float(np.clip(B, 0.0, 0.95))
+    H_halo = float(halo) / 100.0 if float(halo) > 1.0 else float(halo)
+    H_halo = float(np.clip(H_halo, 0.0, 1.0))
+    S = int(np.clip(erode_steps, 0, 2))
+
+    alpha_old = bgra[:, :, 3].astype(np.float32)
+
+    # ── GIAI ĐOẠN 1: Cắt bỏ điểm ảnh mờ & Tăng cường độ sắc nét viền ──
+    p = 1.0 - 0.68 * B  # p thuộc [0.354, 1.0]
+    alpha_1 = np.zeros_like(alpha_old, dtype=np.uint8)
+    valid_mask = alpha_old > C
+    if np.any(valid_mask):
+        denom_c = max(1.0, 255.0 - float(C))
+        norm_a = np.clip((alpha_old[valid_mask] - float(C)) / denom_c, 0.0, 1.0)
+        alpha_1[valid_mask] = np.round(255.0 * np.power(norm_a, p)).clip(0, 255).astype(np.uint8)
+
+    # ── GIAI ĐOẠN 2: Co mép hình thái học 3x3 trên kênh độ đục ──
+    if S > 0:
+        kernel_3x3 = np.ones((3, 3), dtype=np.uint8)
+        alpha_2 = cv2.erode(alpha_1, kernel_3x3, iterations=S, borderType=cv2.BORDER_REPLICATE)
+        alpha_2[alpha_1 == 0] = 0
+    else:
+        alpha_2 = alpha_1.copy()
+
+    # ── GIAI ĐOẠN 3: Khử viền ám màu bằng phương pháp nội suy lân cận 5x5 ──
+    bgr_out = bgra[:, :, :3].copy()
+    if H_halo > 0.0 and h >= 5 and w >= 5:
+        orig_bgr = bgra[:, :, :3].copy()  # Bản sao cố định chỉ đọc
+        inner_a2 = alpha_2[2:h - 2, 2:w - 2]
+        edge_target_mask = (inner_a2 >= 5) & (inner_a2 <= 220)
+
+        if np.any(edge_target_mask):
+            best_alpha = np.full((h - 4, w - 4), 150, dtype=np.int16)
+            donor_bgr = orig_bgr[2:h - 2, 2:w - 2].copy()
+            has_donor = np.zeros((h - 4, w - 4), dtype=bool)
+
+            # Quét toàn bộ 25 điểm ảnh lân cận dy, dx thuộc [-2, 2]
+            for dy in range(-2, 3):
+                y0, y1 = 2 + dy, h - 2 + dy
+                for dx in range(-2, 3):
+                    x0, x1 = 2 + dx, w - 2 + dx
+                    nb_alpha = alpha_2[y0:y1, x0:x1].astype(np.int16)
+                    better = edge_target_mask & (nb_alpha > best_alpha)
+                    if np.any(better):
+                        best_alpha[better] = nb_alpha[better]
+                        donor_bgr[better] = orig_bgr[y0:y1, x0:x1][better]
+                        has_donor[better] = True
+
+            apply_mask = edge_target_mask & has_donor
+            if np.any(apply_mask):
+                a2_vals = inner_a2[apply_mask].astype(np.float32)
+                # m = H_halo * (1 - alpha_2 / 320) * 0.68
+                m = (H_halo * (1.0 - (a2_vals / 320.0)) * 0.68)[:, np.newaxis]
+                orig_vals = orig_bgr[2:h - 2, 2:w - 2][apply_mask].astype(np.float32)
+                donor_vals = donor_bgr[apply_mask].astype(np.float32)
+                blended = np.round(orig_vals * (1.0 - m) + donor_vals * m).clip(0, 255).astype(np.uint8)
+                inner_out = bgr_out[2:h - 2, 2:w - 2]
+                inner_out[apply_mask] = blended
+                bgr_out[2:h - 2, 2:w - 2] = inner_out
+
+    # ── GIAI ĐOẠN 4: Ghi nhận kênh độ đục alpha_2 vào kênh thứ 4 và kết xuất ──
+    return cv2.merge([bgr_out[:, :, 0], bgr_out[:, :, 1], bgr_out[:, :, 2], alpha_2])
+
+
 def _apply_6step_pipeline(img: np.ndarray, pipeline: dict) -> tuple:
     """
-    Thực thi đầy đủ 6 bước cấu hình Pipeline cột trái trên ma trận 4 kênh BGRA:
-      1. dustThreshold (Connected Components lọc bụi Alpha)
-      2. defringeRadius (Morphological Defringe tràn màu biên)
-      3. choke_px (Sub-pixel Choke qua cv2.distanceTransform)
-      4. usmAmount (Unsharp Masking trên kênh BGR)
-      5. longEdgeCm & dpi (Resize cv2.INTER_LANCZOS4)
-      6. colorbalance / grayscale (Chuyển trắng đen chuẩn DTF: L = 0.299*R + 0.587*G + 0.114*B giữ Alpha)
+    Thực thi đầy đủ cấu hình Pipeline trên ma trận 4 kênh BGRA, tích hợp:
+      - Tách nền phẳng 4 góc (Flood Fill 4-corners nếu bật floodFillBg)
+      - Quy trình 4 giai đoạn Làm sạch viền ảnh (Alpha Cutoff C, Edge Boost B, Co mép 3x3 S, Khử ám màu 5x5 H_halo)
+      - Dọn rác Alpha (Connected Components), Co viền Sub-pixel Choke, Tăng nét USM, Resize Lanczos-4 300 DPI, Grayscale Luminance.
     Trả về: (result_bgra, removed_dust_count)
     """
     bgra = _ensure_bgra(img)
-    h, w = bgra.shape[:2]
-    bgr = bgra[:, :, :3].copy()
-    alpha = bgra[:, :, 3].copy()
     dust_count = 0
+
+    # Tách nền phẳng 4 góc nếu người dùng bật trong Pipeline
+    flood_fill_bg = bool(pipeline.get("floodFillBg", pipeline.get("flood_fill_bg", False)))
+    bg_tolerance = int(pipeline.get("bgTolerance", pipeline.get("bg_tolerance", 35)))
+    force_flood = bool(pipeline.get("forceFloodFill", pipeline.get("force_flood_fill", True)))
+    if flood_fill_bg:
+        bgra, _ = _algo_flood_fill_4corners(bgra, tolerance=bg_tolerance, force=force_flood)
+
+    # Tham số 4 giai đoạn Làm sạch viền ảnh (thuat_toan_lam_sach_vien_anh.md)
+    clean_edge_enabled = bool(pipeline.get("cleanEdge", pipeline.get("clean_edge_enabled", True)))
+    alpha_cutoff = int(pipeline.get("alphaCutoff", pipeline.get("alpha_cutoff", 22)))
+    edge_boost = float(pipeline.get("edgeBoost", pipeline.get("edge_boost", 45.0)))
+    dehalo = float(pipeline.get("dehalo", pipeline.get("halo_reduction", 60.0)))
+    erode_steps = int(pipeline.get("erodeSteps", pipeline.get("erode_steps", 0)))
 
     dust_enabled = bool(pipeline.get("dust", pipeline.get("dust_enabled", True)))
     dust_threshold = int(pipeline.get("dustThreshold", pipeline.get("dust_threshold", 5)))
@@ -1113,14 +1344,27 @@ def _apply_6step_pipeline(img: np.ndarray, pipeline: dict) -> tuple:
     dpi_v = max(72, int(pipeline.get("dpi", 300)))
     colorbalance = bool(pipeline.get("colorbalance", pipeline.get("grayscale", False)))
 
-    # Tính tỉ lệ Resize (Downscale sớm để tối ưu tốc độ, Upscale ở cuối để giữ nét)
+    h, w = bgra.shape[:2]
     target_px = max(1, int(round((long_edge_cm / 2.54) * dpi_v)))
     scale_factor = target_px / max(h, w, 1)
 
     if resize_enabled and scale_factor < 1.0:
         nw, nh = max(1, int(round(w * scale_factor))), max(1, int(round(h * scale_factor)))
-        bgr = cv2.resize(bgr, (nw, nh), interpolation=cv2.INTER_LANCZOS4)
-        alpha = cv2.resize(alpha, (nw, nh), interpolation=cv2.INTER_LANCZOS4)
+        bgra = cv2.resize(bgra, (nw, nh), interpolation=cv2.INTER_LANCZOS4)
+
+    # Thực thi 4 giai đoạn Làm sạch viền ảnh (Cắt mờ C + Làm rõ viền B + Co mép 3x3 S + Khử ám màu 5x5 H_halo)
+    if clean_edge_enabled and (alpha_cutoff > 0 or edge_boost > 0 or (defringe_enabled and dehalo > 0) or erode_steps > 0):
+        effective_halo = dehalo if defringe_enabled else 0.0
+        bgra = _algo_clean_edge_4stage(
+            bgra,
+            cutoff=alpha_cutoff,
+            boost=edge_boost,
+            halo=effective_halo,
+            erode_steps=erode_steps,
+        )
+
+    bgr = bgra[:, :, :3].copy()
+    alpha = bgra[:, :, 3].copy()
 
     # Bước 1: Dọn rác Alpha (Connected Components)
     if dust_enabled and dust_threshold > 0:
@@ -1134,8 +1378,8 @@ def _apply_6step_pipeline(img: np.ndarray, pipeline: dict) -> tuple:
             if dust_count > 0:
                 alpha[small_mask[labels]] = 0
 
-    # Bước 3: Co viền bế mượt (Sub-pixel Choke qua cv2.distanceTransform)
-    if choke_enabled and choke_px > 0:
+    # Bước 3: Co viền bế mượt (Sub-pixel Choke qua cv2.distanceTransform khi choke_px > 0 và erode_steps == 0)
+    if choke_enabled and choke_px > 0 and erode_steps == 0:
         dist = cv2.distanceTransform(alpha, cv2.DIST_L2, 5)
         alpha = np.clip((dist - choke_px) * 255.0 / max(1.0, choke_px + 0.5), 0, 255).astype(np.uint8)
 
@@ -1151,8 +1395,8 @@ def _apply_6step_pipeline(img: np.ndarray, pipeline: dict) -> tuple:
         gauss = cv2.GaussianBlur(bgr, (0, 0), 2.0)
         bgr = cv2.addWeighted(bgr, 1.0 + usm_pct * 0.4, gauss, -usm_pct * 0.4, 0)
 
-    # Bước 2: Khử viền bán trong suốt (Morphological Defringe tràn màu biên)
-    if defringe_enabled and defringe_radius > 0:
+    # Bước 2 bổ trợ: Nếu bán kính Defringe > 2px, tràn màu biên mở rộng thêm cho bán kính lớn
+    if defringe_enabled and defringe_radius > 2:
         radius = max(1, defringe_radius)
         kern = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (radius * 2 + 1, radius * 2 + 1))
         opaque_mask = ((alpha == 255).astype(np.uint8)) * 255
@@ -1202,6 +1446,34 @@ def _render_xray_bgra(img: np.ndarray) -> np.ndarray:
     return xray
 
 
+def _safe_imread(path_str: str) -> Optional[np.ndarray]:
+    """
+    Đọc ảnh an toàn trên Windows hỗ trợ 100% đường dẫn có dấu tiếng Việt / Unicode.
+    """
+    if not path_str or not os.path.exists(str(path_str)):
+        return None
+    try:
+        arr = np.fromfile(str(path_str), dtype=np.uint8)
+        if arr.size > 0:
+            img = cv2.imdecode(arr, cv2.IMREAD_UNCHANGED)
+            if img is not None:
+                return img
+    except Exception:
+        pass
+    try:
+        img = cv2.imread(str(path_str), cv2.IMREAD_UNCHANGED)
+        if img is not None:
+            return img
+    except Exception:
+        pass
+    try:
+        with Image.open(str(path_str)) as pil_im:
+            rgba = np.array(pil_im.convert("RGBA"), dtype=np.uint8)
+            return cv2.cvtColor(rgba, cv2.COLOR_RGBA2BGRA)
+    except Exception:
+        return None
+
+
 def _sync_process_batch_item(
     contents: Optional[bytes],
     orig_filename: str,
@@ -1220,7 +1492,17 @@ def _sync_process_batch_item(
     colorbalance: bool,
     export_dir: str,
     item_db_id: int,
+    color_mode: str = "RGBA",
+    clean_edge_enabled: bool = True,
+    alpha_cutoff: int = 22,
+    edge_boost: float = 45.0,
+    dehalo: float = 60.0,
+    erode_steps: int = 0,
+    flood_fill_bg: bool = False,
+    bg_tolerance: int = 35,
+    force_flood_fill: bool = True,
 ):
+    from urllib.parse import quote
     t0 = time.time()
     raw_img = None
     safe_fname = os.path.basename(orig_filename or f"item_{int(time.time())}.png")
@@ -1228,15 +1510,20 @@ def _sync_process_batch_item(
     if contents:
         nparr = np.frombuffer(contents, np.uint8)
         raw_img = cv2.imdecode(nparr, cv2.IMREAD_UNCHANGED)
-    elif item_db_id > 0:
-        with get_db_connection() as conn:
-            row = conn.execute("SELECT filename, input_path FROM queue_items WHERE id = ?", (item_db_id,)).fetchone()
-            if row:
-                if row["filename"]:
-                    safe_fname = os.path.basename(row["filename"])
-                in_path = row["input_path"]
-                if in_path and os.path.exists(str(in_path)):
-                    raw_img = cv2.imread(str(in_path), cv2.IMREAD_UNCHANGED)
+    if raw_img is None and item_db_id > 0:
+        try:
+            with get_db_connection() as conn:
+                row = conn.execute("SELECT * FROM queue_items WHERE id = ?", (item_db_id,)).fetchone()
+                if row:
+                    row_d = dict(row)
+                    db_fname = row_d.get("file_name") or row_d.get("filename")
+                    if db_fname:
+                        safe_fname = os.path.basename(str(db_fname))
+                    in_path = row_d.get("input_path")
+                    if in_path:
+                        raw_img = _safe_imread(str(in_path))
+        except Exception:
+            pass
 
     if raw_img is None:
         return None, None
@@ -1245,8 +1532,22 @@ def _sync_process_batch_item(
     blur_score = None
     removed_dust = 0
     dpi_val = max(72, int(dpi))
+    normalized_color_mode = (color_mode or "RGBA").upper().strip()
+    if normalized_color_mode not in ("RGBA", "CMYK", "CMYK_TIFF"):
+        normalized_color_mode = "RGBA"
+
+    # Nếu bật tách nền phẳng 4 góc (hoặc chọn preset flood_fill_clean_edge)
+    if flood_fill_bg or preset == "flood_fill_clean_edge":
+        img, _ = _algo_flood_fill_4corners(img, tolerance=bg_tolerance, force=force_flood_fill)
 
     pipeline_cfg = {
+        "cleanEdge": clean_edge_enabled,
+        "alphaCutoff": alpha_cutoff,
+        "edgeBoost": edge_boost,
+        "dehalo": dehalo,
+        "erodeSteps": erode_steps,
+        "floodFillBg": False,
+        "bgTolerance": bg_tolerance,
         "dust": dust_enabled,
         "dustThreshold": dust_threshold,
         "defringe": defringe_enabled,
@@ -1259,22 +1560,72 @@ def _sync_process_batch_item(
         "longEdgeCm": long_edge_cm,
         "dpi": dpi_val,
         "colorbalance": colorbalance,
+        "colorMode": normalized_color_mode,
     }
 
     # Dispatch theo từng chế độ xử lý ảnh + kết hợp thông số Pipeline
-    if preset in ("dtf_sharpness_defringe", "defringe_v2", "sharpness"):
+    if preset in ("clean_edge_4stage", "flood_fill_clean_edge"):
+        result = _algo_clean_edge_4stage(
+            img,
+            cutoff=alpha_cutoff,
+            boost=edge_boost,
+            halo=dehalo if defringe_enabled else 0.0,
+            erode_steps=erode_steps,
+        )
+        if dust_enabled and dust_threshold > 0:
+            a_tmp = result[:, :, 3].copy()
+            _, binary = cv2.threshold(a_tmp, 10, 255, cv2.THRESH_BINARY)
+            num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(binary, connectivity=8)
+            if num_labels > 1:
+                areas = stats[:, cv2.CC_STAT_AREA]
+                small_mask = areas < int(dust_threshold)
+                small_mask[0] = False
+                removed_dust = int(np.sum(small_mask))
+                if removed_dust > 0:
+                    a_tmp[small_mask[labels]] = 0
+                    result[:, :, 3] = a_tmp
+        if usm_enabled and usm_amount > 0:
+            usm_pct = float(usm_amount) / 100.0
+            bgr_tmp = result[:, :, :3]
+            gauss = cv2.GaussianBlur(bgr_tmp, (0, 0), 2.0)
+            result[:, :, :3] = cv2.addWeighted(bgr_tmp, 1.0 + usm_pct * 0.4, gauss, -usm_pct * 0.4, 0)
+        if colorbalance:
+            result = _algo_grayscale_luminance(result)
+    elif preset in ("dtf_sharpness_defringe", "defringe_v2", "sharpness"):
         result, removed_dust = _apply_6step_pipeline(img, pipeline_cfg)
     elif preset in ("harden_edge", "harden"):
-        result = _algo_harden_edge_usm(img, threshold=127)
+        result = _algo_clean_edge_4stage(
+            img,
+            cutoff=max(22, int(alpha_cutoff)),
+            boost=max(0.65, float(edge_boost) / 100.0 if float(edge_boost) > 1.0 else float(edge_boost)),
+            halo=dehalo if defringe_enabled else 0.0,
+            erode_steps=erode_steps,
+        )
+        result = _algo_harden_edge_usm(result, threshold=127)
         if colorbalance:
             result = _algo_grayscale_luminance(result)
     elif preset in ("smooth_contour", "smooth"):
-        result = _algo_smooth_contour_chaikin(img, refinements=2)
+        result = _algo_clean_edge_4stage(
+            img,
+            cutoff=alpha_cutoff,
+            boost=edge_boost,
+            halo=dehalo if defringe_enabled else 0.0,
+            erode_steps=erode_steps,
+        )
+        result = _algo_smooth_contour_chaikin(result, refinements=2)
         if colorbalance:
             result = _algo_grayscale_luminance(result)
     elif preset in ("denoise_deskew", "denoise"):
         min_area = max(10, int(dust_threshold)) if dust_enabled else 10
         result, removed_dust = _algo_denoise_and_deskew(img, min_area=min_area)
+        if clean_edge_enabled:
+            result = _algo_clean_edge_4stage(
+                result,
+                cutoff=alpha_cutoff,
+                boost=edge_boost,
+                halo=dehalo if defringe_enabled else 0.0,
+                erode_steps=erode_steps,
+            )
         if colorbalance:
             result = _algo_grayscale_luminance(result)
     elif preset == "grayscale":
@@ -1284,11 +1635,25 @@ def _sync_process_batch_item(
         result = img
     elif preset in ("defringe_resize", "resize"):
         target_cm = float(long_edge_cm) if resize_enabled and long_edge_cm > 0 else 30.0
-        result = _algo_defringe_resize_30cm(img, target_cm=target_cm, dpi=dpi_val)
+        result = _algo_clean_edge_4stage(
+            img,
+            cutoff=alpha_cutoff,
+            boost=edge_boost,
+            halo=max(60.0, float(dehalo)),
+            erode_steps=erode_steps,
+        )
+        result = _algo_defringe_resize_30cm(result, target_cm=target_cm, dpi=dpi_val)
         if colorbalance:
             result = _algo_grayscale_luminance(result)
     elif preset in ("defringe_choke", "choke"):
-        result = _algo_defringe_choke(img, iterations=max(1, int(round(choke_px))))
+        result = _algo_clean_edge_4stage(
+            img,
+            cutoff=alpha_cutoff,
+            boost=edge_boost,
+            halo=max(60.0, float(dehalo)),
+            erode_steps=max(1, int(erode_steps)),
+        )
+        result = _algo_defringe_choke(result, iterations=max(1, int(round(choke_px))))
         if colorbalance:
             result = _algo_grayscale_luminance(result)
     else:
@@ -1321,25 +1686,44 @@ def _sync_process_batch_item(
         semi_ratio = (semi_count / total_pixels) * 100.0
         alpha_clean_pct = max(0.0, 100.0 - semi_ratio)
 
-    pil_res = Image.fromarray(cv2.cvtColor(result, cv2.COLOR_BGRA2RGBA), mode="RGBA")
-    buf = io.BytesIO()
-    pil_res.save(buf, format="PNG", dpi=(dpi_val, dpi_val), compress_level=3)
-    output_bytes = buf.getvalue()
-
+    # Bước 8: Chuyển đổi Hệ màu (RGBA | CMYK | CMYK_TIFF) và lưu file chuẩn 300 DPI
+    bgr_final = result[:, :, :3]
     base_no_ext = os.path.splitext(safe_fname)[0]
     out_filename = f"DTF_PRO_{base_no_ext}.png"
-    saved_output_path = os.path.join(TEMP_DIR, out_filename)
+    temp_target_path = os.path.join(TEMP_DIR, out_filename)
+    saved_output_path = temp_target_path
+    output_bytes = b""
+
     try:
-        with open(saved_output_path, "wb") as f_out:
-            f_out.write(output_bytes)
+        saved_temp_path, output_bytes = save_for_print_with_color_mode(
+            bgr_matrix=bgr_final,
+            alpha_channel=a_channel,
+            output_path=temp_target_path,
+            color_mode=normalized_color_mode,
+            dpi=dpi_val,
+        )
+        # Luôn lưu thêm bản .png preview tại temp_target_path nếu chế độ là CMYK_TIFF để Inspector hiển thị
+        if normalized_color_mode == "CMYK_TIFF" and output_bytes:
+            with open(temp_target_path, "wb") as f_prev:
+                f_prev.write(output_bytes)
+        saved_output_path = saved_temp_path
+
         if export_dir and export_dir.strip():
             os.makedirs(export_dir.strip(), exist_ok=True)
-            dest_file = os.path.join(export_dir.strip(), out_filename)
-            with open(dest_file, "wb") as f_dest:
-                f_dest.write(output_bytes)
-            saved_output_path = dest_file
+            dest_target = os.path.join(export_dir.strip(), out_filename)
+            saved_dest_path, _ = save_for_print_with_color_mode(
+                bgr_matrix=bgr_final,
+                alpha_channel=a_channel,
+                output_path=dest_target,
+                color_mode=normalized_color_mode,
+                dpi=dpi_val,
+            )
+            saved_output_path = saved_dest_path
     except Exception:
-        pass
+        pil_res = Image.fromarray(cv2.cvtColor(result, cv2.COLOR_BGRA2RGBA), mode="RGBA")
+        buf = io.BytesIO()
+        pil_res.save(buf, format="PNG", dpi=(dpi_val, dpi_val), compress_level=3)
+        output_bytes = buf.getvalue()
 
     if item_db_id > 0:
         try:
@@ -1354,17 +1738,26 @@ def _sync_process_batch_item(
         except Exception:
             pass
 
-    headers = {
+    # QUAN TRỌNG: Mọi HTTP Header trong Starlette/FastAPI bắt buộc phải thuộc dải latin-1 (ASCII-safe)
+    # Tuyệt đối không dùng ký tự Unicode '•' (\u2022) hoặc đường dẫn tiếng Việt chưa mã hóa trong headers!
+    dpi_mode_label = f"{dpi_val} DPI - {'CMYK TIFF' if normalized_color_mode == 'CMYK_TIFF' else normalized_color_mode}"
+    safe_out_path_hdr = quote(str(saved_output_path or ""), safe="/:\\._-")
+    raw_headers = {
         "X-Render-Time": render_time_str,
         "X-Resolution": f"{out_w} x {out_h}",
         "X-Alpha-Clean": f"{alpha_clean_pct:.1f}%",
         "X-Blur-Score": f"{blur_score:.1f}" if blur_score is not None else "",
         "X-Blur-Warning": "true" if (blur_score is not None and blur_score < 100.0) else "false",
         "X-Removed-Dust": str(removed_dust),
-        "X-Output-Path": saved_output_path,
+        "X-Output-Path": safe_out_path_hdr,
         "X-File-Size": str(len(output_bytes)),
-        "X-DPI": f"{dpi_val} DPI CMYK RGBA",
-        "Access-Control-Expose-Headers": "X-Render-Time, X-Resolution, X-Alpha-Clean, X-Blur-Score, X-Blur-Warning, X-Removed-Dust, X-Output-Path, X-File-Size, X-DPI, Content-Disposition",
+        "X-DPI": dpi_mode_label,
+        "X-Color-Mode": normalized_color_mode,
+        "Access-Control-Expose-Headers": "X-Render-Time, X-Resolution, X-Alpha-Clean, X-Blur-Score, X-Blur-Warning, X-Removed-Dust, X-Output-Path, X-File-Size, X-DPI, X-Color-Mode, Content-Disposition",
+    }
+    headers = {
+        k: str(v).encode("latin-1", errors="ignore").decode("latin-1")
+        for k, v in raw_headers.items()
     }
     return output_bytes, headers
 
@@ -1387,40 +1780,62 @@ async def process_batch_item(
     colorbalance: bool = Form(False),
     export_dir: str = Form(""),
     item_db_id: int = Form(0),
+    color_mode: str = Form("RGBA"),
+    clean_edge_enabled: bool = Form(True),
+    alpha_cutoff: int = Form(22),
+    edge_boost: float = Form(45.0),
+    dehalo: float = Form(60.0),
+    erode_steps: int = Form(0),
+    flood_fill_bg: bool = Form(False),
+    bg_tolerance: int = Form(35),
+    force_flood_fill: bool = True,
 ):
     """
-    Xử lý thực tế từng file ảnh trong hàng đợi Batch Processing theo 8 thuật toán đặc tả
-    kết hợp đầy đủ 6 thông số Pipeline (chạy trong ThreadPool để không bao giờ chặn
-    event loop của /system-metrics hay WebSocket khi xử lý ảnh lớn 4500x5400).
+    Xử lý thực tế từng file ảnh trong hàng đợi Batch Processing theo đặc tả:
+    - thuat_toan_lam_sach_vien_anh.md (Quy trình 4 giai đoạn làm sạch viền + Tách nền phẳng 4 góc)
+    - thuat_toan_xu_ly_anh_page_batch.md (Chuyển đổi hệ màu RGBA / CMYK / CMYK_TIFF chuẩn 300 DPI)
+    Chạy trong ThreadPool để không bao giờ chặn event loop của /system-metrics hay WebSocket.
     """
-    contents = await file.read() if file is not None else None
-    orig_filename = (file.filename if file is not None else "") or ""
+    try:
+        contents = await file.read() if file is not None else None
+        orig_filename = (file.filename if file is not None else "") or ""
 
-    output_bytes, headers = await asyncio.to_thread(
-        _sync_process_batch_item,
-        contents,
-        orig_filename,
-        preset,
-        choke_px,
-        dust_enabled,
-        dust_threshold,
-        defringe_enabled,
-        defringe_radius,
-        choke_enabled,
-        usm_enabled,
-        usm_amount,
-        resize_enabled,
-        long_edge_cm,
-        dpi,
-        colorbalance,
-        export_dir,
-        item_db_id,
-    )
+        output_bytes, headers = await asyncio.to_thread(
+            _sync_process_batch_item,
+            contents,
+            orig_filename,
+            preset,
+            choke_px,
+            dust_enabled,
+            dust_threshold,
+            defringe_enabled,
+            defringe_radius,
+            choke_enabled,
+            usm_enabled,
+            usm_amount,
+            resize_enabled,
+            long_edge_cm,
+            dpi,
+            colorbalance,
+            export_dir,
+            item_db_id,
+            color_mode,
+            clean_edge_enabled,
+            alpha_cutoff,
+            edge_boost,
+            dehalo,
+            erode_steps,
+            flood_fill_bg,
+            bg_tolerance,
+            bool(force_flood_fill),
+        )
 
-    if output_bytes is None:
-        return JSONResponse(status_code=400, content={"error": "Không đọc được tệp hình ảnh"})
+        if output_bytes is None:
+            return JSONResponse(status_code=400, content={"error": "Không đọc được tệp hình ảnh gốc"})
 
-    return Response(content=output_bytes, media_type="image/png", headers=headers)
+        return Response(content=output_bytes, media_type="image/png", headers=headers)
+    except Exception as exc:
+        return JSONResponse(status_code=500, content={"error": f"Lỗi xử lý ảnh: {exc}"})
 
 
 
@@ -1454,7 +1869,7 @@ def _register_file_to_sqlite(conn, file_name: str, input_path: str, nparr: np.nd
     thumb_name = "thumb_{}_{}.png".format(int(time.time() * 1000), os.path.basename(file_name))
     thumb_path = os.path.join(TEMP_DIR, thumb_name)
     try:
-        img_cv = cv2.imdecode(nparr, cv2.IMREAD_UNCHANGED) if nparr is not None else cv2.imread(input_path, cv2.IMREAD_UNCHANGED)
+        img_cv = cv2.imdecode(nparr, cv2.IMREAD_UNCHANGED) if nparr is not None else _safe_imread(input_path)
         if img_cv is not None:
             orig_h, orig_w = img_cv.shape[:2]
             has_alpha_flag = (len(img_cv.shape) == 3 and img_cv.shape[2] == 4)
@@ -1465,7 +1880,10 @@ def _register_file_to_sqlite(conn, file_name: str, input_path: str, nparr: np.nd
                     alpha_clean_pct = round(max(0.0, 100.0 - (semi_cnt / a_ch.size) * 100.0), 1)
             sc = 128 / max(orig_h, orig_w, 1)
             thb = cv2.resize(img_cv, (max(1, int(orig_w * sc)), max(1, int(orig_h * sc))), interpolation=cv2.INTER_AREA)
-            cv2.imwrite(thumb_path, thb)
+            ok_enc, enc_buf = cv2.imencode(".png", thb)
+            if ok_enc:
+                with open(thumb_path, "wb") as f_thb:
+                    f_thb.write(enc_buf.tobytes())
     except Exception:
         thumb_path = ""
 
@@ -1687,11 +2105,11 @@ async def _run_batch_job(job_id: int, db_items: list, file_paths: list, pipeline
 def _run_pipeline_on_path(input_path: str, pipeline: dict, item_id) -> dict:
     """
     Thực thi Pipeline xử lý ảnh trực tiếp từ đường dẫn ổ cứng (input_path):
-    Hỗ trợ cả 8 chế độ preset VÀ đầy đủ 6 thông số Pipeline từ cột trái.
+    Hỗ trợ quy trình 4 giai đoạn làm sạch viền + tách nền 4 góc + chuyển đổi hệ màu RGBA / CMYK / CMYK_TIFF.
     """
     if not os.path.exists(str(input_path)):
         raise FileNotFoundError("File khong ton tai: {}".format(input_path))
-    raw_img = cv2.imread(str(input_path), cv2.IMREAD_UNCHANGED)
+    raw_img = _safe_imread(str(input_path))
     if raw_img is None:
         raise ValueError("Khong doc duoc anh")
 
@@ -1702,25 +2120,92 @@ def _run_pipeline_on_path(input_path: str, pipeline: dict, item_id) -> dict:
     choke_px = float(pipeline.get("chokePx", pipeline.get("choke_px", 1.5)))
     dust_threshold = int(pipeline.get("dustThreshold", pipeline.get("dust_threshold", 5)))
     dust_enabled = bool(pipeline.get("dust", pipeline.get("dust_enabled", True)))
+    defringe_enabled = bool(pipeline.get("defringe", pipeline.get("defringe_enabled", True)))
+    usm_enabled = bool(pipeline.get("usm", pipeline.get("usm_enabled", True)))
+    usm_amount = float(pipeline.get("usmAmount", pipeline.get("usm_amount", 120.0)))
     resize_enabled = bool(pipeline.get("resize", pipeline.get("resize_enabled", True)))
     long_edge_cm = float(pipeline.get("longEdgeCm", pipeline.get("long_edge_cm", 30.0)))
+
+    clean_edge_enabled = bool(pipeline.get("cleanEdge", pipeline.get("clean_edge_enabled", True)))
+    alpha_cutoff = int(pipeline.get("alphaCutoff", pipeline.get("alpha_cutoff", 22)))
+    edge_boost = float(pipeline.get("edgeBoost", pipeline.get("edge_boost", 45.0)))
+    dehalo = float(pipeline.get("dehalo", pipeline.get("halo_reduction", 60.0)))
+    erode_steps = int(pipeline.get("erodeSteps", pipeline.get("erode_steps", 0)))
+    flood_fill_bg = bool(pipeline.get("floodFillBg", pipeline.get("flood_fill_bg", False)))
+    bg_tolerance = int(pipeline.get("bgTolerance", pipeline.get("bg_tolerance", 35)))
+    force_flood = bool(pipeline.get("forceFloodFill", pipeline.get("force_flood_fill", True)))
+    color_mode = str(pipeline.get("colorMode", pipeline.get("color_mode", "RGBA"))).upper().strip()
+    if color_mode not in ("RGBA", "CMYK", "CMYK_TIFF"):
+        color_mode = "RGBA"
+
+    if flood_fill_bg or preset == "flood_fill_clean_edge":
+        img, _ = _algo_flood_fill_4corners(img, tolerance=bg_tolerance, force=force_flood)
 
     dust_count = 0
     blur_score = None
 
-    if preset in ("dtf_sharpness_defringe", "defringe_v2", "sharpness"):
+    if preset in ("clean_edge_4stage", "flood_fill_clean_edge"):
+        result = _algo_clean_edge_4stage(
+            img,
+            cutoff=alpha_cutoff,
+            boost=edge_boost,
+            halo=dehalo if defringe_enabled else 0.0,
+            erode_steps=erode_steps,
+        )
+        if dust_enabled and dust_threshold > 0:
+            a_tmp = result[:, :, 3].copy()
+            _, binary = cv2.threshold(a_tmp, 10, 255, cv2.THRESH_BINARY)
+            num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(binary, connectivity=8)
+            if num_labels > 1:
+                areas = stats[:, cv2.CC_STAT_AREA]
+                small_mask = areas < int(dust_threshold)
+                small_mask[0] = False
+                dust_count = int(np.sum(small_mask))
+                if dust_count > 0:
+                    a_tmp[small_mask[labels]] = 0
+                    result[:, :, 3] = a_tmp
+        if usm_enabled and usm_amount > 0:
+            usm_pct = float(usm_amount) / 100.0
+            bgr_tmp = result[:, :, :3]
+            gauss = cv2.GaussianBlur(bgr_tmp, (0, 0), 2.0)
+            result[:, :, :3] = cv2.addWeighted(bgr_tmp, 1.0 + usm_pct * 0.4, gauss, -usm_pct * 0.4, 0)
+        if colorbalance:
+            result = _algo_grayscale_luminance(result)
+    elif preset in ("dtf_sharpness_defringe", "defringe_v2", "sharpness"):
         result, dust_count = _apply_6step_pipeline(img, pipeline)
     elif preset in ("harden_edge", "harden"):
-        result = _algo_harden_edge_usm(img, threshold=127)
+        result = _algo_clean_edge_4stage(
+            img,
+            cutoff=max(22, alpha_cutoff),
+            boost=max(0.65, edge_boost / 100.0 if edge_boost > 1.0 else edge_boost),
+            halo=dehalo if defringe_enabled else 0.0,
+            erode_steps=erode_steps,
+        )
+        result = _algo_harden_edge_usm(result, threshold=127)
         if colorbalance:
             result = _algo_grayscale_luminance(result)
     elif preset in ("smooth_contour", "smooth"):
-        result = _algo_smooth_contour_chaikin(img, refinements=2)
+        result = _algo_clean_edge_4stage(
+            img,
+            cutoff=alpha_cutoff,
+            boost=edge_boost,
+            halo=dehalo if defringe_enabled else 0.0,
+            erode_steps=erode_steps,
+        )
+        result = _algo_smooth_contour_chaikin(result, refinements=2)
         if colorbalance:
             result = _algo_grayscale_luminance(result)
     elif preset in ("denoise_deskew", "denoise"):
         min_area = max(10, dust_threshold) if dust_enabled else 10
         result, dust_count = _algo_denoise_and_deskew(img, min_area=min_area)
+        if clean_edge_enabled:
+            result = _algo_clean_edge_4stage(
+                result,
+                cutoff=alpha_cutoff,
+                boost=edge_boost,
+                halo=dehalo if defringe_enabled else 0.0,
+                erode_steps=erode_steps,
+            )
         if colorbalance:
             result = _algo_grayscale_luminance(result)
     elif preset == "grayscale":
@@ -1730,11 +2215,25 @@ def _run_pipeline_on_path(input_path: str, pipeline: dict, item_id) -> dict:
         result = img
     elif preset in ("defringe_resize", "resize"):
         target_cm = long_edge_cm if resize_enabled and long_edge_cm > 0 else 30.0
-        result = _algo_defringe_resize_30cm(img, target_cm=target_cm, dpi=dpi_v)
+        result = _algo_clean_edge_4stage(
+            img,
+            cutoff=alpha_cutoff,
+            boost=edge_boost,
+            halo=max(60.0, dehalo),
+            erode_steps=erode_steps,
+        )
+        result = _algo_defringe_resize_30cm(result, target_cm=target_cm, dpi=dpi_v)
         if colorbalance:
             result = _algo_grayscale_luminance(result)
     elif preset in ("defringe_choke", "choke"):
-        result = _algo_defringe_choke(img, iterations=max(1, int(round(choke_px))))
+        result = _algo_clean_edge_4stage(
+            img,
+            cutoff=alpha_cutoff,
+            boost=edge_boost,
+            halo=max(60.0, dehalo),
+            erode_steps=max(1, erode_steps),
+        )
+        result = _algo_defringe_choke(result, iterations=max(1, int(round(choke_px))))
         if colorbalance:
             result = _algo_grayscale_luminance(result)
     else:
@@ -1761,7 +2260,6 @@ def _run_pipeline_on_path(input_path: str, pipeline: dict, item_id) -> dict:
     alpha_clean = round(max(0.0, 100.0 - (semi_cnt / max(1, a_ch.size)) * 100.0), 1)
 
     base_name = os.path.splitext(os.path.basename(str(input_path)))[0]
-    # Loại bỏ tiền tố input_timestamp_ nếu có
     if base_name.startswith("input_"):
         parts = base_name.split("_", 2)
         if len(parts) == 3:
@@ -1769,16 +2267,31 @@ def _run_pipeline_on_path(input_path: str, pipeline: dict, item_id) -> dict:
     output_name = f"DTF_PRO_{base_name}.png"
 
     export_dir = pipeline.get("export_dir", "").strip()
-    output_path = os.path.join(TEMP_DIR, output_name)
-    pil_img = Image.fromarray(cv2.cvtColor(result, cv2.COLOR_BGRA2RGBA), mode="RGBA")
-    pil_img.save(output_path, format="PNG", dpi=(dpi_v, dpi_v), compress_level=3)
+    temp_output_path = os.path.join(TEMP_DIR, output_name)
+    bgr_final = result[:, :, :3]
+    output_path, preview_bytes = save_for_print_with_color_mode(
+        bgr_matrix=bgr_final,
+        alpha_channel=a_ch,
+        output_path=temp_output_path,
+        color_mode=color_mode,
+        dpi=dpi_v,
+    )
+    if color_mode == "CMYK_TIFF" and preview_bytes:
+        with open(temp_output_path, "wb") as f_prev:
+            f_prev.write(preview_bytes)
 
     if export_dir:
         try:
             os.makedirs(export_dir, exist_ok=True)
             dest_path = os.path.join(export_dir, output_name)
-            pil_img.save(dest_path, format="PNG", dpi=(dpi_v, dpi_v), compress_level=3)
-            output_path = dest_path
+            saved_dest, _ = save_for_print_with_color_mode(
+                bgr_matrix=bgr_final,
+                alpha_channel=a_ch,
+                output_path=dest_path,
+                color_mode=color_mode,
+                dpi=dpi_v,
+            )
+            output_path = saved_dest
         except Exception:
             pass
 
@@ -1789,6 +2302,7 @@ def _run_pipeline_on_path(input_path: str, pipeline: dict, item_id) -> dict:
         "height": out_h,
         "alpha_clean": alpha_clean,
         "blur_score": blur_score,
+        "color_mode": color_mode,
     }
 
 
@@ -1839,7 +2353,7 @@ async def api_inspector_preview(file_id: int = Query(...), mode: str = Query("no
     img_path = row_d.get("output_path") if (mode != "original" and row_d.get("output_path") and os.path.exists(str(row_d.get("output_path")))) else row_d.get("input_path", "")
     if not img_path or not os.path.exists(str(img_path)):
         return JSONResponse({"error": "File khong ton tai tren dia"}, status_code=404)
-    img = cv2.imread(str(img_path), cv2.IMREAD_UNCHANGED)
+    img = _safe_imread(str(img_path))
     if img is None:
         return JSONResponse({"error": "Khong doc duoc anh"}, status_code=500)
 

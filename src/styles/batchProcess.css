@@ -8,7 +8,7 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
-  height: 150%;
+  height: 190%;
   padding-bottom: 8px;
   color: var(--text-primary);
   font-family: var(--font-ui, 'Inter', system-ui, sans-serif);
@@ -1679,4 +1679,40 @@
 
 .batch-btn-download-inspector:active {
   transform: translateY(0);
+}
+
+/* Segmented Control chuyển đổi Hệ màu [ RGBA | CMYK ] trên Top Bar */
+.batch-colormode-segmented {
+  display: inline-flex;
+  align-items: center;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 2px;
+  gap: 2px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.batch-colormode-btn {
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 5px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.16s ease;
+  font-family: inherit;
+  letter-spacing: 0.02em;
+}
+
+.batch-colormode-btn:hover {
+  color: var(--text-primary);
+}
+
+.batch-colormode-btn.active {
+  background: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
+  color: #ffffff;
+  box-shadow: 0 1px 4px rgba(99, 102, 241, 0.35);
 }
